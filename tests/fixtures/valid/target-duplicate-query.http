@@ -1,0 +1,3 @@
+GET /?q=a&q=b HTTP/1.1
+Host: example.test
+

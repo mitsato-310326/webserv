@@ -1,0 +1,2 @@
+# Fixtures are exact wire bytes. Do not normalize CRLF or binary bodies.
+fixtures/**/*.http -text

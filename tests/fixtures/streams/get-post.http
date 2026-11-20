@@ -1,0 +1,8 @@
+GET / HTTP/1.1
+Host: example.test
+
+POST / HTTP/1.1
+Host: example.test
+Content-Length: 3
+
+abc
