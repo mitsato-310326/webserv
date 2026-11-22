@@ -22,6 +22,10 @@ struct HttpRequests
 	std::vector<HttpHeader> headers;  // Host・Content-Length・Transfer-Encodingなど。重複も保持
 	std::string             body;     // chunkedの場合はデコード後。NULも含めて保持
 
+	std::string				absProtocol;
+	std::string				absHost;
+	std::string				absPort;
+
 	HttpRequests() : versionMajor(0), versionMinor(0) {}
 };
 

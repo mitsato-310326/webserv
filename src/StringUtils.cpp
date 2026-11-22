@@ -60,6 +60,18 @@ std::string DecodeString(const std::string &text)
     return (decoded);
 }
 
+std::string toUpper(const std::string &text)
+{
+	const char *ptr = text.c_str();
+    std::string uppercase = "";
+    for (int j = 0; ptr[j] != '\0'; j++)
+	{
+		char upper_char = static_cast<char>(std::toupper(ptr[j]));
+		uppercase += toString(upper_char);
+	}
+    return (uppercase);
+}
+
 const char *urlDecodeException::what() const throw()
 {
     return ("String: URL decode string must be written with hex characters");

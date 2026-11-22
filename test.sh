@@ -1,4 +1,3 @@
 #!/bin/bash
 
-make
-./webserv $(find ./fixtures -type f)
+make && ./webserv $(find ./fixtures -type f)

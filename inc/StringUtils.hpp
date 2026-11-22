@@ -19,6 +19,7 @@ unsigned int	   		 	HexToDec(const std::string& text);
 std::string					DecodeHex(const std::string &text);
 std::string 				DecodeString(const std::string &text);
 std::string 				toString(char decimal);
+std::string					toUpper(const std::string &text);
 
 class urlDecodeException : public std::exception
 {
