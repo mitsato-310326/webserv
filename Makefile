@@ -1,7 +1,10 @@
 NAME = webserv
 
-SRC = src/HttpRequestsParser.cpp \
-	  src/TestScript.cpp
+SRC = src/HttpRequestsParseFirstLine.cpp \
+	  src/HttpRequestsTest.cpp \
+	  src/TestScript.cpp \
+	  src/StringTest.cpp \
+	  src/StringUtils.cpp
 
 OBJS = ${SRC:.cpp=.o}
 

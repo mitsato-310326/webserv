@@ -1,4 +1,4 @@
-#include "../inc/TestScript.hpp"
+# include "../inc/TestScript.hpp"
 
 static int	g_total = 0;
 static int	g_failed = 0;
@@ -18,26 +18,4 @@ void	check(const std::string& label, bool ok)
 		std::cout << RED << "  [FAIL] " << RESET << label << "\n";
 		g_failed++;
 	}
-}
-
-void	HttpRequestParsertest(std::string str, std::string::size_type n)
-{
-	
-}
-
-
-int main(void)
-{
-	HttpRequestsParser	parse = HttpRequestsParser();
-	bool				flag = true;
-	title("isLineToolong");
-	try
-	{
-		parse.isLineTooLong("a\r\n", 3);
-	}
-	catch (const std::exception & e)
-	{
-		flag = false;
-	}
-	check("a\\r\\n, 3", flag);
 }

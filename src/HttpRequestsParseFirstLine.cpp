@@ -1,0 +1,126 @@
+#include "../inc/HttpRequestsParser.hpp"
+
+HttpRequestsParser::HttpRequestsParser()
+{
+	_httprequests.versionMajor = 0;
+	_httprequests.versionMajor = 0;
+	_cursor = 0;
+}
+
+HttpRequestsParser::~HttpRequestsParser()
+{
+}
+
+HttpRequestsParser&	HttpRequestsParser::operator=(const HttpRequestsParser& rhs)
+{
+	_httprequests.body = rhs._httprequests.body;
+	_httprequests.headers = rhs._httprequests.headers;
+	_httprequests.method = rhs._httprequests.method;
+	_httprequests.path = rhs._httprequests.path;
+	_httprequests.query = rhs._httprequests.query;
+	_httprequests.target = rhs._httprequests.target;
+	_httprequests.versionMajor = rhs._httprequests.versionMajor;
+	_httprequests.versionMinor = rhs._httprequests.versionMinor;
+	return (*this);
+}
+
+void	HttpRequestsParser::isLineTooLong(const std::string& str, std::string::size_type max)
+{
+	std::string::size_type	end = str.find("\r\n", _cursor);
+	if (end == std::string::npos)
+	{
+		end = str.length();
+	}
+	if (end - _cursor > max)
+	{
+		throw LineTooLongException();
+	}
+	else
+		return ;
+}
+
+void	HttpRequestsParser::ParseMethod(const std::string& method)
+{
+	if (!StringPermition(method, METHODPERMITION))
+		throw RequestFirstLineException();
+	_httprequests.method = method;
+}
+
+void	HttpRequestsParser::ParseUri(const std::string& target)
+{
+	_httprequests.target = target;
+	std::string::size_type	qpos = target.find("?");
+	std::string	path = target.substr(0, qpos);
+	_httprequests.path = ParsePath(path);
+	if (qpos == std::string::npos)
+		return ;
+	std::string query = target.substr(qpos + 1, std::string::npos);
+	_httprequests.query = ParseQuery(query);	
+}
+
+std::string	HttpRequestsParser::ParsePath(const std::string& path)
+{
+	if (path[0] != '/')
+		throw RequestFirstLineException ();
+	if (!StringPermition(path, PATHPERMITION))
+		throw RequestFirstLineException ();
+	return (DecodeString(path));
+}
+
+std::string	HttpRequestsParser::ParseQuery(const std::string& query)
+{
+	if (!StringPermition(query, PATHPERMITION))
+		throw RequestFirstLineException ();
+	return (DecodeString(query));
+}
+
+void HttpRequestsParser::ParseHttp(const std::string& Http)
+{
+	if (Http.length() != 8)
+		throw RequestFirstLineException ();
+	if (Http.substr(0, 5) != "HTTP/")
+		throw RequestFirstLineException ();
+	std::string	Major = Http.substr(5, 1);
+	if (Major.find_first_of(NUMBER))
+		throw RequestFirstLineException ();
+	if (Http.substr(6, 1) != ".")
+		throw RequestFirstLineException ();
+	std::string	Minor = Http.substr(7, 1);
+	if (Minor.find_first_of(NUMBER))
+		throw RequestFirstLineException ();
+	char *end;
+	_httprequests.versionMajor = strtoul(Major.c_str(), &end, 10);
+	_httprequests.versionMinor = strtoul(Minor.c_str(), &end, 10);
+}
+
+void	HttpRequestsParser::ParseFirstLine(const std::string& str)
+{
+	if (_cursor != 0)
+		throw InternalSystemException();
+	std::string::size_type pos = str.find("\r\n");
+	if (pos == std::string::npos)
+		throw RequestFirstLineException();
+	std::string FirstLine = str.substr(_cursor, pos);
+	isLineTooLong(FirstLine, MAXLINEBYTES);
+	std::vector<std::string> words = split(FirstLine);
+	if (words.size() != 3)
+		throw RequestFirstLineException();
+	// ParseMethod(words[0]);
+	// ParseUri(words[1]);
+	ParseHttp(words[2]);
+}
+
+const char* HttpRequestsParser::LineTooLongException::what() const throw()
+{
+	return ("HttpRequestsParser: One line is too long to be used in HTPP Request");
+}
+
+const char* HttpRequestsParser::RequestFirstLineException::what() const throw()
+{
+	return ("HttpRequestsParser: First line wrong method used in HTPP Request");
+}
+
+const char* HttpRequestsParser::InternalSystemException::what() const throw()
+{
+	return ("HttpRequestsParser: First line wrong method used in HTPP Request");
+}

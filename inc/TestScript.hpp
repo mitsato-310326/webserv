@@ -1,12 +1,13 @@
 #ifndef TESTSCRIPT_HPP
 # define TESTSCRIPT_HPP
-# include <iostream>
 # include <iterator>
+# include <iostream>
+# include <fstream>
 # include <string>
 # include <vector>
 # include <deque>
 # include <list>
-# include "HttpRequestsParser.hpp"
+# include <dirent.h>
 
 # define RESET   "\033[0m"
 # define RED     "\033[31m"
@@ -16,5 +17,4 @@
 
 void	title(const std::string& text);
 void	check(const std::string& label, bool ok);
-
 #endif
