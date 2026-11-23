@@ -20,6 +20,8 @@ class HttpRequestsParser
 		HttpRequestsParser&	operator=(const HttpRequestsParser&);
 		~HttpRequestsParser();
 
+		void		Parse(const std::string& buffer);
+
 		/* ParseFirstLine.cpp */
 		void		ParseFirstLine(const std::string& str);
 		void		isLineTooLong(const std::string& str, std::string::size_type max);

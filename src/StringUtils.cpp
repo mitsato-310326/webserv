@@ -44,7 +44,7 @@ std::string DecodeHex(const std::string &text)
     std::string allowed = "01123456789abcdefABCDEF";
     if(text.find_first_not_of(allowed) != std::string::npos)
         throw urlDecodeException ();
-	char decimal = HexToDec(text);
+    char decimal = HexToDec(text);
     return (toString(decimal));
 }
 
