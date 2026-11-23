@@ -147,18 +147,3 @@ void	HttpRequestsParser::ParseFirstLine(const std::string& str)
 	ParseUri(words[1]);
 	ParseHttp(words[2]);
 }
-
-const char* HttpRequestsParser::LineTooLongException::what() const throw()
-{
-	return ("HttpRequestsParser: One line is too long to be used in HTPP Request");
-}
-
-const char* HttpRequestsParser::RequestFirstLineException::what() const throw()
-{
-	return ("HttpRequestsParser: First line wrong method used in HTPP Request");
-}
-
-const char* HttpRequestsParser::InternalSystemException::what() const throw()
-{
-	return ("HttpRequestsParser: First line wrong method used in HTPP Request");
-}

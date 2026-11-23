@@ -1,5 +1,25 @@
 #include "../inc/StringUtils.hpp"
 
+std::vector<std::string> csplit(const std::string& text, char c)
+{
+    std::vector<std::string> result;
+    std::string::size_type cursor = 0;
+
+    while (true)
+    {
+        std::string::size_type end = text.find(c, cursor);
+
+        if (end == std::string::npos)
+        {
+            result.push_back(text.substr(cursor));
+            break;
+        }
+
+        result.push_back(text.substr(cursor, end - cursor));
+        cursor = end + 1;
+    }
+    return result;
+}
 std::vector<std::string> split(const std::string& text)
 {
     std::istringstream			stream(text);
@@ -41,10 +61,12 @@ std::string DecodeHex(const std::string &text)
 {
     if (text.length() != 2)
         throw urlDecodeException ();
-    std::string allowed = "01123456789abcdefABCDEF";
+    std::string allowed = ALNUM;
     if(text.find_first_not_of(allowed) != std::string::npos)
+    {
         throw urlDecodeException ();
-    char decimal = HexToDec(text);
+    }
+	char decimal = HexToDec(text);
     return (toString(decimal));
 }
 
