@@ -1,0 +1,238 @@
+{
+  "version": "1.0",
+  "description": "Engine X Configuration Parser Test Cases",
+  "test_categories": {
+    "valid": {
+      "count": 8,
+      "description": "正常な設定ファイル - 構文が正しく、全ディレクティブが有効",
+      "cases": [
+        {
+          "file": "valid/basic-server.conf",
+          "purpose": "最小限のサーバー設定（listen, server_name, root）"
+        },
+        {
+          "file": "valid/with-location.conf",
+          "purpose": "ロケーションブロック付き設定"
+        },
+        {
+          "file": "valid/multiple-servers.conf",
+          "purpose": "複数のサーバーブロック定義"
+        },
+        {
+          "file": "valid/with-ssl.conf",
+          "purpose": "SSL/TLS設定（ssl_certificate, ssl_certificate_key）"
+        },
+        {
+          "file": "valid/with-error-pages.conf",
+          "purpose": "エラーページのカスタマイズ（error_page）"
+        },
+        {
+          "file": "valid/with-cgi.conf",
+          "purpose": "CGI処理の設定（cgi_pass）"
+        },
+        {
+          "file": "valid/with-upload.conf",
+          "purpose": "ファイルアップロード設定（client_max_body_size, allowed_methods）"
+        },
+        {
+          "file": "valid/with-redirect.conf",
+          "purpose": "リダイレクト設定（return）"
+        }
+      ]
+    },
+    "invalid": {
+      "count": 15,
+      "description": "不正な設定ファイル - 構文違反またはディレクティブ値が不正",
+      "cases": [
+        {
+          "file": "invalid/missing-closing-brace.conf",
+          "purpose": "閉じ括弧の欠落",
+          "error": "SyntaxError"
+        },
+        {
+          "file": "invalid/missing-opening-brace.conf",
+          "purpose": "開き括弧の欠落",
+          "error": "SyntaxError"
+        },
+        {
+          "file": "invalid/missing-semicolon.conf",
+          "purpose": "セミコロン終端の欠落",
+          "error": "SyntaxError"
+        },
+        {
+          "file": "invalid/invalid-port.conf",
+          "purpose": "ポート番号が非数値（abc）",
+          "error": "ValueError"
+        },
+        {
+          "file": "invalid/port-out-of-range.conf",
+          "purpose": "ポート番号が範囲外（70000 > 65535）",
+          "error": "RangeError"
+        },
+        {
+          "file": "invalid/negative-port.conf",
+          "purpose": "ポート番号が負数",
+          "error": "RangeError"
+        },
+        {
+          "file": "invalid/empty-server.conf",
+          "purpose": "サーバーブロックが空",
+          "error": "ValidationError"
+        },
+        {
+          "file": "invalid/no-directive-value.conf",
+          "purpose": "ディレクティブの値なし",
+          "error": "SyntaxError"
+        },
+        {
+          "file": "invalid/location-without-path.conf",
+          "purpose": "locationのパス指定なし",
+          "error": "SyntaxError"
+        },
+        {
+          "file": "invalid/duplicate-listen.conf",
+          "purpose": "listen重複（方針依存）",
+          "error": "DuplicateError"
+        },
+        {
+          "file": "invalid/invalid-method.conf",
+          "purpose": "無効なHTTPメソッド",
+          "error": "ValueError"
+        },
+        {
+          "file": "invalid/client-max-body-size-invalid.conf",
+          "purpose": "無効な数値単位",
+          "error": "ValueError"
+        },
+        {
+          "file": "invalid/invalid-error-code.conf",
+          "purpose": "無効なHTTPエラーコード（999）",
+          "error": "ValueError"
+        },
+        {
+          "file": "invalid/nested-location.conf",
+          "purpose": "ネストされたlocationブロック",
+          "error": "StructureError"
+        },
+        {
+          "file": "invalid/unknown-directive.conf",
+          "purpose": "不明なディレクティブ",
+          "error": "UnknownDirectiveError"
+        }
+      ]
+    },
+    "edge_cases": {
+      "count": 10,
+      "description": "境界値・複雑な構成 - 正常系として受理予定",
+      "cases": [
+        {
+          "file": "edge-cases/boundary-port-min.conf",
+          "purpose": "ポート番号の最小値（1）"
+        },
+        {
+          "file": "edge-cases/boundary-port-max.conf",
+          "purpose": "ポート番号の最大値（65535）"
+        },
+        {
+          "file": "edge-cases/max-body-size-with-unit.conf",
+          "purpose": "単位付きサイズ値（10M）"
+        },
+        {
+          "file": "edge-cases/whitespace-handling.conf",
+          "purpose": "複数スペースの処理"
+        },
+        {
+          "file": "edge-cases/tab-separation.conf",
+          "purpose": "タブを使用した分離"
+        },
+        {
+          "file": "edge-cases/empty-location-block.conf",
+          "purpose": "空のlocationブロック"
+        },
+        {
+          "file": "edge-cases/many-locations.conf",
+          "purpose": "複数のlocationブロック（5個）"
+        },
+        {
+          "file": "edge-cases/long-directive-value.conf",
+          "purpose": "長いディレクティブ値"
+        },
+        {
+          "file": "edge-cases/special-chars-in-path.conf",
+          "purpose": "パスに特殊文字を含む"
+        },
+        {
+          "file": "edge-cases/ipv6-address.conf",
+          "purpose": "IPv6アドレス指定"
+        }
+      ]
+    },
+    "policy": {
+      "count": 5,
+      "description": "ポリシー依存 - 設計時に判断が必要",
+      "cases": [
+        {
+          "file": "policy/case-sensitive-directive.conf",
+          "purpose": "ディレクティブの大文字小文字（Server_Name）"
+        },
+        {
+          "file": "policy/multiple-server-names.conf",
+          "purpose": "複数のserver_name値"
+        },
+        {
+          "file": "policy/multiple-error-codes.conf",
+          "purpose": "複数のエラーコード指定"
+        },
+        {
+          "file": "policy/redirect-code.conf",
+          "purpose": "リダイレクトコード（return 301）"
+        },
+        {
+          "file": "policy/multiple-allowed-methods.conf",
+          "purpose": "複数のHTTPメソッド指定"
+        }
+      ]
+    }
+  },
+  "directives": {
+    "server_level": [
+      "listen",
+      "server_name",
+      "root",
+      "index",
+      "error_page",
+      "client_max_body_size",
+      "ssl_certificate",
+      "ssl_certificate_key",
+      "return"
+    ],
+    "location_level": [
+      "root",
+      "index",
+      "proxy_pass",
+      "cgi_pass",
+      "allowed_methods"
+    ]
+  },
+  "http_methods": [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "HEAD",
+    "OPTIONS",
+    "PATCH"
+  ],
+  "error_codes": {
+    "valid_range": [400, 599],
+    "common": [400, 401, 403, 404, 405, 500, 501, 502, 503, 504]
+  },
+  "constraints": {
+    "port": {
+      "min": 1,
+      "max": 65535
+    },
+    "domain_name_max_length": 253,
+    "path_max_length": 4096
+  }
+}
