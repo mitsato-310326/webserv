@@ -11,14 +11,14 @@ static bool ReadTestFile(std::string path, std::string &text)
 	return (true);
 }
 
-static void	isLineTooLongTest(std::string str, std::string sample, std::string::size_type n)
+static void	isLineTooLongTest(std::string str, std::string sample)
 {
 	HttpRequestsParser parser;
 	bool	flag;
 	flag = true;
 	try
 	{
-		parser.isLineTooLong(str, n);
+		parser.LineLength(str);
 	}
 	catch (const std::exception & e)
 	{
@@ -45,15 +45,28 @@ static void ParseFirstLineTest(const std::string &text, const std::string &sampl
 
 int HttpRequestTest(int argc, char **argv)
 {
-	bool	isLineTooLongParser = true;	
+	bool	Extract = false;	
+	bool	isLineTooLongParser = false;	
 	bool	ParseFirstLine = true;	
+
+	if (Extract)
+	{
+		title("ExtractLine");
+		std::string	text;
+		for (int i = 1; i < argc; i++)
+		{
+			HttpRequestsParser http;
+			ReadTestFile(argv[i], text);
+			std::cout << http.ExtractLine(text) << http.ExtractLine(text) << std::endl;
+		}
+	}
 
 	if (isLineTooLongParser == true)
 	{
 		title("isLineTooLongParser");
-		isLineTooLongTest("a\r\n", "a\\r\\n", 3);
-		isLineTooLongTest("abcde", "abcde", 3);
-		isLineTooLongTest("abcde", "abcde", 5);
+		isLineTooLongTest("a\r\n", "a\\r\\n");
+		isLineTooLongTest("abcde", "abcde");
+		isLineTooLongTest("abcde", "abcde");
 	}
 
 	if (ParseFirstLine == true)

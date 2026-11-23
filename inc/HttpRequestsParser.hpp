@@ -8,9 +8,7 @@
 # include <string>
 # include <cctype>
 
-# ifndef MAXLINEBYTES
-#  define MAXLINEBYTES 8192
-# endif
+
 
 class HttpRequestsParser
 {
@@ -20,9 +18,12 @@ class HttpRequestsParser
 		HttpRequestsParser&	operator=(const HttpRequestsParser&);
 		~HttpRequestsParser();
 
+		/* ParseUtils.cpp */
+		std::string::size_type	LineLength(const std::string& str);
+		std::string				ExtractLine(const std::string& str);
+
 		/* ParseFirstLine.cpp */
 		void		ParseFirstLine(const std::string& str);
-		void		isLineTooLong(const std::string& str, std::string::size_type max);
 		void		ParseMethod(const std::string& method);
 		void		ParseUri(const std::string& target);
 		std::string	ParsePath(const std::string& path);
@@ -32,6 +33,7 @@ class HttpRequestsParser
 		void 		ParseHttp(const std::string& Http);
 
 		/* ParseHeader.cpp */
+		void		ParseOneHeader(const std::string& str);
 		void		ParseHeader(const std::string& str);
 		HttpHeader	ParseHeaderOneLine(const std::string& str);
 

@@ -1,6 +1,7 @@
 NAME = webserv
 
 SRC = src/HttpRequestsParseFirstLine.cpp \
+	  src/HttpRequestsParseUtils.cpp \
 	  src/HttpRequestsExceptions.cpp \
 	  src/HttpRequestsTest.cpp \
 	  src/TestScript.cpp \
