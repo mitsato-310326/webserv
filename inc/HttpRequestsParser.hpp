@@ -21,7 +21,7 @@ class HttpRequestsParser
 		/* ParseUtils.cpp */
 		std::string::size_type	LineLength(const std::string& str);
 		std::string				ExtractLine(const std::string& str);
-		void		          Parse(const std::string& buffer);
+		void		            Parse(const std::string& buffer);
 
 		/* ParseFirstLine.cpp */
 		void		ParseFirstLine(const std::string& str);
@@ -37,6 +37,9 @@ class HttpRequestsParser
 		void		ParseOneHeader(const std::string& str);
 		void		ParseHeader(const std::string& str);
 		HttpHeader	ParseHeaderOneLine(const std::string& str);
+		void		RequestsParser(const std::string& str);
+		const HttpRequests& GetRequest() const { return _httprequests; }
+
 
 		/* Exceptions */
 		class LineTooLongException : public std::exception

@@ -29,4 +29,5 @@ int main(int argc, char **argv)
 		HttpRequestTest(argc, argv);
 	if (String)
 		StringTest();
+	return (g_failed == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 }

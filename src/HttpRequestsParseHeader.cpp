@@ -3,8 +3,6 @@
 HttpHeader	HttpRequestsParser::ParseHeaderOneLine(const std::string& str)
 {
 	std::vector<std::string> vector = csplit(str, ':');
-	if (vector.size() != 2)
-		throw RequestHeaderException ();
 	HttpHeader header;
 	header.name = vector[0];
 	header.value = vector[1];
@@ -46,7 +44,7 @@ void	HttpRequestsParser::ParseOneHeader(const std::string& line)
 	{
 		std::vector<std::string> vector = csplit(header.value, ',');
 		size_t size = vector.size();
-		for (int i = 0; i < size; i++)
+		for (size_t i = 0; i < size; i++)
 		{
 			std::vector<std::string> value = split(vector[i]);
 			if (value.size() != 1)
@@ -63,7 +61,7 @@ void	HttpRequestsParser::ParseHeader(const std::string& str)
 {
 	while (true)
 	{
-		std::string line = ExtractLine();
+		std::string line = ExtractLine(str);
 		if (line.empty())
 			return ;
 		if (line == "\r\n")
