@@ -7,6 +7,7 @@
 # include <iostream>
 
 # define NUMBER "0123456789"
+# define HEX NUMBER"ABCDEF""abcdef"
 # define ALPHABET "ABCDEFGHIJKLMNOPQRSTUVWXYZ""abcdefghijklmnopqrstuvwxyz"
 # define ALNUM ALPHABET"0123456789"
 # define METHODPERMITION ALNUM"!#$%&'*+-.^_`|~"

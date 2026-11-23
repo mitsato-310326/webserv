@@ -3,7 +3,7 @@ SERVER = webserv-server
 
 SRC = src/HttpRequestsParseFirstLine.cpp \
 	  src/HttpRequestsParseHeader.cpp \
-	  src/HttpRequestsParsebody.cpp \
+	  src/HttpRequestsParseBody.cpp \
 	  src/HttpRequestsParser.cpp \
 	  src/HttpRequestsParseUtils.cpp \
 	  src/HttpRequestsExceptions.cpp \

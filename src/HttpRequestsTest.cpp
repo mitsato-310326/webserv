@@ -47,17 +47,31 @@ static void CheckFixtureHeader(const HttpRequests& request, const std::string& s
 static void ParseRequestTest(const std::string &text, const std::string &sample)
 {
 	HttpRequestsParser parser;
+	const bool shouldReject =
+		(sample.find("/invalid/") != std::string::npos ||
+		 sample.find("/incomplete/") != std::string::npos);
+	const bool isUnsupported =
+		 sample.find("/unsupported/") != std::string::npos;
 	try
 	{
 		parser.RequestsParser(text);
+		if (shouldReject)
+			check(sample + ": expected incomplete/error result", false);
+		else if (isUnsupported)
+			check(sample + ": unsupported syntax parsed", true);
+		else
+		{
+			check(sample, true);
+			CheckFixtureHeader(parser.GetRequest(), sample);
+		}
 	}
 	catch (const std::exception & e)
 	{
-		check(sample + ": " + e.what(), false);
-		return;
+		if (shouldReject || isUnsupported)
+			check(sample + ": rejected/error as expected", true);
+		else
+			check(sample + ": " + e.what(), false);
 	}
-	check(sample, true);
-	CheckFixtureHeader(parser.GetRequest(), sample);
 }
 
 static void CheckHeader(const HttpRequests& request, std::size_t index,
@@ -160,16 +174,43 @@ static void TestContentLengthBody()
 	}
 }
 
+static void ChunkSizeTest(const std::string& text)
+{
+	HttpRequestsParser	http;
+	bool				flag = true;
+
+	try
+	{
+		http.ParseTransferEncoding(text);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		flag = false;
+	}
+	check("chunk size test", flag);
+}
+
 int HttpRequestTest(int argc, char **argv)
 {
-	bool	Extract = false;	
-	bool	isLineTooLongParser = false;	
-	
-	if (argc == 1)
+	const bool	chunksize = false;
+	const bool	HeaderStorage = false;
+	const bool	ContentLengthBody = false;
+	const bool	Extract = false;
+	const bool	isLineTooLongParser = false;
+	const bool	RequestFixtures = true;
+
+
+	if (chunksize)
 	{
-		TestHeaderStorage();
-		TestContentLengthBody();
+		title ("ChunkSize TransferEncoding");
+		ChunkSizeTest("0\r\n\r\n");
+		ChunkSizeTest("4\r\nabcd\r\n0\r\n\r\n");
 	}
+	if (HeaderStorage)
+		TestHeaderStorage();
+	if (ContentLengthBody)
+		TestContentLengthBody();
 	if (Extract)
 	{
 		title("ExtractLine");
@@ -190,7 +231,7 @@ int HttpRequestTest(int argc, char **argv)
 		isLineTooLongTest("abcde", "abcde");
 	}
 
-	if (argc > 1)
+	if (RequestFixtures && argc > 1)
 	{
 		title ("Request fixtures");
 		std::string text;

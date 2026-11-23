@@ -73,3 +73,8 @@ void	HttpRequestsParser::ParseHeader(const std::string& str)
 		ParseOneHeader(line);
 	}
 }
+
+const HttpRequests& HttpRequestsParser::GetRequest() const 
+{
+	return (_httprequests);
+}

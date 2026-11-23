@@ -38,10 +38,13 @@ class HttpRequestsParser
 		void		ParseHeader(const std::string& str);
 		HttpHeader	ParseHeaderOneLine(const std::string& str);
 		void		RequestsParser(const std::string& str);
-		const HttpRequests& GetRequest() const { return _httprequests; }
+		const HttpRequests& GetRequest() const;
 
-		/* Parsebody */
+		/* Parsebody.cpp */
 		void		ParseContentLength(const std::string& text);
+		void		ParseTransferEncodingOneChunk(const std::string& text);
+		void		ParseTransferEncoding(const std::string& text);
+		bool		TransferEncodingImplementationCheck() const;
 
 		/* Exceptions */
 		class LineTooLongException : public std::exception

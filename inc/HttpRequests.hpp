@@ -42,6 +42,8 @@ struct HttpRequests
 	std::string						host;
 	ssize_t							contentLength;
 	std::vector<TransferEncoding>	transferEncoding;
+	std::string::size_type			chunkBytesRemaining;
+	std::string::size_type			chunkBytes;
 
 	HttpRequests() : versionMajor(0), versionMinor(0) {}
 };
