@@ -19,7 +19,7 @@ NGINX風の設定ファイルパーサー実装のための包括的テストス
 
 ## テストケース一覧（仕様ベース）
 
-### Valid（正常な設定）- 9ケース
+### Valid（正常な設定）- 13ケース
 
 | ファイル | 目的 |
 |---------|------|
@@ -32,8 +32,12 @@ NGINX風の設定ファイルパーサー実装のための包括的テストス
 | with-upload.conf | ファイルアップロード設定（upload_store） |
 | multiple-servers.conf | 複数ポートの複数サーバーブロック |
 | with-directory-listing.conf | autoindex ディレクティブ |
+| multiple-server-names.conf | 複数 server_name 値（1行指定、NGINX 検証済） |
+| multiple-error-codes.conf | 複数 error_page ディレクティブ（NGINX 検証済） |
+| return-redirect.conf | return ディレクティブのリダイレクトコード（NGINX 検証済） |
+| multiple-cgi-extensions.conf | 複数ファイル拡張子の CGI 設定（NGINX 検証済） |
 
-### Invalid（不正な設定）- 12ケース
+### Invalid（不正な設定）- 13ケース
 
 | ファイル | 目的 |
 |---------|------|
@@ -49,6 +53,7 @@ NGINX風の設定ファイルパーサー実装のための包括的テストス
 | invalid-autoindex.conf | autoindex の無効な値 |
 | no-directive-value.conf | ディレクティブの値なし |
 | missing-semicolon.conf | セミコロン終端の欠落 |
+| case-sensitive-directive.conf | ディレクティブ名の大文字小文字（Server_Name、NGINX 検証済） |
 
 ### Edge Cases（境界値・複雑な構成）- 8ケース
 
@@ -63,15 +68,9 @@ NGINX風の設定ファイルパーサー実装のための包括的テストス
 | all-http-methods.conf | 全HTTPメソッド（GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH） |
 | multiple-index-files.conf | 複数のデフォルトファイル指定 |
 
-### Policy（ポリシー依存）- 5ケース
+### Policy（ポリシー依存）- 0ケース
 
-| ファイル | 目的 |
-|---------|------|
-| multiple-server-names.conf | 複数の server_name 値（1行指定） |
-| multiple-error-codes.conf | 複数の error_page ディレクティブ |
-| return-redirect.conf | return ディレクティブのリダイレクトコード |
-| case-sensitive-directive.conf | ディレクティブの大文字小文字（Server_Name） |
-| multiple-cgi-extensions.conf | 複数ファイル拡張子のCGI設定 |
+NGINX 検証により、全 policy ケースが valid または invalid へ移動しました。
 
 ## テストの実装方針
 
@@ -119,18 +118,23 @@ NGINX風の設定ファイルパーサー実装のための包括的テストス
 - `autoindex` - ディレクトリリスティング
 - `upload_store` - ファイルアップロード場所
 
-## 集計
+## 集計（NGINX 検証後）
 
-- valid: 9件
-- invalid: 12件
-- edge-cases: 8件
-- policy: 5件
+- valid: **13件**（NGINX 検証済：4ケース）
+- invalid: **13件**（NGINX 検証済：1ケース）
+- edge-cases: **8件**
+- policy: **0件**（全て valid/invalid へ統合）
 - **total: 34件**
 
-## 仕様への準拠
+## 仕様への準拠と検証
 
 このテストスイートは以下の仕様要件に基づいています：
 - **en.subject.pdf** IV.3「Configuration file」
 - NGINX風の設定ファイル形式
 - 複数ポート・複数サーバーのサポート
 - CGI、ファイルアップロード、リダイレクト対応
+
+### NGINX 検証結果
+5個の policy ケースを実際の NGINX 1.31.9 で検証し、以下の結果に基づいて分類を調整しました：
+- ✅ valid へ移動（4ケース）：NGINX で許容される標準機能
+- ❌ invalid へ移動（1ケース）：ディレクティブの大文字小文字は不許容

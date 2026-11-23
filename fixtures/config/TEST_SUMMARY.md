@@ -3,14 +3,14 @@
 仕様書（en.subject.pdf）IV.3「Configuration file」に基づいた包括的なテストスイート。
 NGINX風の設定ファイルパーサーの実装テスト用です。
 
-## 📊 テスト統計
+## 📊 テスト統計（NGINX 1.31.9 検証後）
 
 | カテゴリ | ケース数 | 説明 |
 |---------|---------|------|
-| **valid** | 9 | 正常な設定ファイル（仕様準拠） |
-| **invalid** | 12 | 不正な設定ファイル（エラー検出） |
+| **valid** | 13 | 正常な設定ファイル（仕様準拠、4ケース NGINX 検証済） |
+| **invalid** | 13 | 不正な設定ファイル（エラー検出、1ケース NGINX 検証済） |
 | **edge-cases** | 8 | 境界値・複雑な構成 |
-| **policy** | 5 | ポリシー依存ケース |
+| **policy** | 0 | ポリシー依存ケース（全て valid/invalid へ統合） |
 | **合計** | **34** | **全テストケース** |
 
 ## 🎯 仕様に基づいたディレクティブ
@@ -54,8 +54,9 @@ NGINX風の設定ファイルパーサーの実装テスト用です。
 
 ## 🧪 テストケース詳細
 
-### Valid Cases - 正常な設定（9件）
+### Valid Cases - 正常な設定（13件）
 
+#### 基本機能（9ケース）
 1. **basic-server.conf**
    - 最小限の設定：listen, server_name, root
    - テスト: ポート指定、サーバー名、ドキュメントルート
@@ -92,7 +93,24 @@ NGINX風の設定ファイルパーサーの実装テスト用です。
    - autoindex ディレクティブ
    - テスト: オン/オフの切り替え
 
-### Invalid Cases - 不正な設定（12件）
+#### NGINX 検証済み（4ケース）
+10. **multiple-server-names.conf** ✅ NGINX検証済
+    - 複数 server_name 値を1行指定
+    - テスト: 複数ドメイン設定
+
+11. **multiple-error-codes.conf** ✅ NGINX検証済
+    - 複数の error_page ディレクティブ
+    - テスト: 複数エラーコード対応
+
+12. **return-redirect.conf** ✅ NGINX検証済
+    - return ディレクティブのリダイレクトコード
+    - テスト: 301/302 リダイレクト
+
+13. **multiple-cgi-extensions.conf** ✅ NGINX検証済
+    - 複数ファイル拡張子の CGI 設定
+    - テスト: .php, .py, .sh 等の複数拡張子
+
+### Invalid Cases - 不正な設定（13件）
 
 #### 必須ディレクティブ欠落
 - **missing-listen.conf** - 必須の listen ディレクティブ欠落
@@ -113,6 +131,9 @@ NGINX風の設定ファイルパーサーの実装テスト用です。
 - **client-max-body-size-invalid.conf** - 無効なサイズ値
 - **invalid-error-code.conf** - 無効なHTTPコード（999）
 - **invalid-autoindex.conf** - autoindex の無効な値（on/off以外）
+
+#### NGINX 検証済み
+- **case-sensitive-directive.conf** ✅ NGINX検証済 - ディレクティブ名の大文字小文字（Server_Name → 拒否）
 
 ### Edge Cases - 境界値・複雑な構成（8件）
 
@@ -172,10 +193,10 @@ NGINX風の設定ファイルパーサーの実装テスト用です。
 ## 🚀 実装時の推奨事項
 
 1. **段階的な実装**
-   - Phase 1: 基本的な構文解析（valid cases）
+   - Phase 1: 基本的な構文解析（基本 valid cases）
    - Phase 2: エラーハンドリング（invalid cases）
    - Phase 3: 境界値処理（edge cases）
-   - Phase 4: ポリシー判定（policy cases）
+   - Phase 4: NGINX 検証済み機能（NGINX valid/invalid cases）
 
 2. **エラーメッセージ**
    - ファイル名と行番号を含める
@@ -201,6 +222,9 @@ NGINX風の設定ファイルパーサーの実装テスト用です。
 - [x] ConfigParser.hpp - インターフェース定義
 - [x] ConfigParser.cpp - スケルトン実装
 - [x] ConfigParserTest.cpp - テストハーネス
+- [x] NGINX 検証（1.31.9）- policy ケース 5個全検証
+  - [x] 4ケースが valid へ移動（NGINX で許容）
+  - [x] 1ケースが invalid へ移動（NGINX で拒否）
 - [ ] 詳細な実装開始
   - [ ] トークンナイザー（字句解析）
   - [ ] パーサー（構文解析）
