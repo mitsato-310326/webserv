@@ -7,7 +7,7 @@
 #include <poll.h>
 #include <vector>
 
-bool handleListenEvents(pollfd entry, std::vector<pollfd> &fds,
+void handleListenEvents(pollfd entry, std::vector<pollfd> &fds,
                         std::map<int, client> &clients);
 bool handleClientEvents(pollfd &entry, client &connection);
 void disconnectClient(std::size_t i, std::vector<pollfd> &fds,

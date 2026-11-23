@@ -1,31 +1,38 @@
 #include "server.hpp"
 #include "server_error.hpp"
 #include "connection_events.hpp"
+#include <cerrno>
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
-int createListenSocket(unsigned short port, int &listenFd) {
-  int fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (fd < 0)
-    return FAILURE;
+ListenSocket::ListenSocket(unsigned short port)
+    : fd_(socket(AF_INET, SOCK_STREAM, 0)) {
+  if (fd_ < 0)
+    throw ServerError("socket", errno);
 
   int opt = 1;
   sockaddr_in serv_addr = sockaddr_in();
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   serv_addr.sin_port = htons(port);
-  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0 ||
-      fcntl(fd, F_SETFL, O_NONBLOCK) < 0 ||
-      bind(fd, (const sockaddr *)&serv_addr, sizeof(serv_addr)) < 0 ||
-      listen(fd, SOMAXCONN) < 0) {
-    close(fd);
-    return FAILURE;
+  try {
+    if (setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+      throw ServerError("setsockopt", errno);
+    if (fcntl(fd_, F_SETFL, O_NONBLOCK) < 0)
+      throw ServerError("fcntl", errno);
+    if (bind(fd_, (const sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+      throw ServerError("bind", errno);
+    if (listen(fd_, SOMAXCONN) < 0)
+      throw ServerError("listen", errno);
+  } catch (...) {
+    close(fd_);
+    throw;
   }
-  listenFd = fd;
-  return SUCCESS;
 }
+
+ListenSocket::~ListenSocket() { close(fd_); }
 
 static void acceptClient(int listenFd, std::vector<pollfd> &fds,
                          std::map<int, client> &clients) {
@@ -39,15 +46,19 @@ static void acceptClient(int listenFd, std::vector<pollfd> &fds,
     return;
   }
   pollfd entry = {fd, POLLIN, 0};
-  fds.push_back(entry);
+  try {
+    fds.push_back(entry);
+  } catch (...) {
+    close(fd);
+    throw;
+  }
   clients[fd]; // この fd に対応する client をデフォルト構築する。
 }
 
-bool handleListenEvents(pollfd entry, std::vector<pollfd> &fds,
+void handleListenEvents(pollfd entry, std::vector<pollfd> &fds,
                         std::map<int, client> &clients) {
   if (entry.revents & (POLLERR | POLLHUP | POLLNVAL))
-    return false;
+    throw ServerError("poll: listening socket is unavailable");
   if (entry.revents & POLLIN)
     acceptClient(entry.fd, fds, clients);
-  return true;
 }

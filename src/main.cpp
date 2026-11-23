@@ -1,12 +1,15 @@
 #include "server.hpp"
-#include "server_error.hpp"
-#include <unistd.h>
+#include <cstdlib>
+#include <exception>
+#include <iostream>
 
 int main(void) {
-  int listen_fd;
-  if (createListenSocket(8080, listen_fd) == FAILURE)
-    return FAILURE;
-  int status = runEventLoop(listen_fd);
-  close(listen_fd);
-  return status;
+  try {
+    ListenSocket listener(8080);
+    runEventLoop(listener.fd());
+  } catch (const std::exception &error) {
+    std::cerr << "webserv: " << error.what() << '\n';
+    return EXIT_FAILURE;
+  }
+  return EXIT_SUCCESS;
 }
