@@ -21,6 +21,7 @@ class HttpRequestsParser
 		/* ParseUtils.cpp */
 		std::string::size_type	LineLength(const std::string& str);
 		std::string				ExtractLine(const std::string& str);
+		void		          Parse(const std::string& buffer);
 
 		/* ParseFirstLine.cpp */
 		void		ParseFirstLine(const std::string& str);
