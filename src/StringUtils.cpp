@@ -1,5 +1,25 @@
 #include "../inc/StringUtils.hpp"
 
+std::vector<std::string> csplit(const std::string& text, char c)
+{
+    std::vector<std::string> result;
+    std::string::size_type cursor = 0;
+
+    while (true)
+    {
+        std::string::size_type end = text.find(c, cursor);
+
+        if (end == std::string::npos)
+        {
+            result.push_back(text.substr(cursor));
+            break;
+        }
+
+        result.push_back(text.substr(cursor, end - cursor));
+        cursor = end + 1;
+    }
+    return result;
+}
 std::vector<std::string> split(const std::string& text)
 {
     std::istringstream			stream(text);

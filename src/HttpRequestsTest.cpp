@@ -43,7 +43,7 @@ static void ParseFirstLineTest(const std::string &text, const std::string &sampl
 	check(sample, flag);
 }
 
-int main(int argc, char **argv)
+int HttpRequestTest(int argc, char **argv)
 {
 	bool	isLineTooLongParser = true;	
 	bool	ParseFirstLine = true;	
@@ -69,4 +69,5 @@ int main(int argc, char **argv)
 			ParseFirstLineTest(text, argv[i]);
 		}
 	}
+	return (0);
 }

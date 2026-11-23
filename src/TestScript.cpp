@@ -19,3 +19,14 @@ void	check(const std::string& label, bool ok)
 		g_failed++;
 	}
 }
+
+int main(int argc, char **argv)
+{
+	bool HttpRequest = false;
+	bool String = true;
+
+	if (HttpRequest)
+		HttpRequestTest(argc, argv);
+	if (String)
+		StringTest();
+}
