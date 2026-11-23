@@ -3,8 +3,11 @@
 HttpRequestsParser::HttpRequestsParser()
 {
 	_httprequests.versionMajor = 0;
-	_httprequests.versionMajor = 0;
+	_httprequests.versionMinor = 0;
 	_httprequests.contentLength = -1;
+	_httprequests.chunkBytesRemaining = 0;
+	_httprequests.chunkBytes = std::string::npos;
+	_httprequests.transferEncoding.clear();
 	_cursor = 0;
 }
 

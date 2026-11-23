@@ -1,5 +1,14 @@
 #include "../inc/StringUtils.hpp"
 
+std::string strtrim(const std::string& text, const std::string& charset)
+{
+    std::string::size_type start = text.find_first_not_of(charset);
+    if (start == std::string::npos)
+        return ("");
+    std::string::size_type last = text.find_last_not_of(charset);
+    return (text.substr(start, last - start + 1));
+}
+
 std::vector<std::string> csplit(const std::string& text, char c)
 {
     std::vector<std::string> result;
@@ -19,6 +28,16 @@ std::vector<std::string> csplit(const std::string& text, char c)
         cursor = end + 1;
     }
     return result;
+}
+
+std::pair<std::string, std::string> cdvide(const std::string& text, char c)
+{
+    std::string::size_type end = text.find(c, 0);
+    if (end == std::string::npos)
+        return (std::make_pair("", ""));
+    std::string lhs = text.substr(0, end);
+    std::string rhs = text.substr(end + 1, std::string::npos);
+    return (std::make_pair(lhs, rhs));
 }
 
 std::vector<std::string> split(const std::string& text)
@@ -85,12 +104,10 @@ std::string DecodeString(const std::string &text)
 
 std::string toUpper(const std::string &text)
 {
-	const char *ptr = text.c_str();
     std::string uppercase = "";
-    for (int j = 0; ptr[j] != '\0'; j++)
+    for (std::string::size_type j = 0; j < text.size(); ++j)
 	{
-		char upper_char = static_cast<char>(std::toupper(ptr[j]));
-		uppercase += toString(upper_char);
+		uppercase += static_cast<char>(std::toupper(static_cast<unsigned char>(text[j])));
 	}
     return (uppercase);
 }

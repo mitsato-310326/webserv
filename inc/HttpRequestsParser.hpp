@@ -21,7 +21,7 @@ class HttpRequestsParser
 		/* ParseUtils.cpp */
 		std::string::size_type	LineLength(const std::string& str);
 		std::string				ExtractLine(const std::string& str);
-		void		          Parse(const std::string& buffer);
+		void		            Parse(const std::string& buffer);
 
 		/* ParseFirstLine.cpp */
 		void		ParseFirstLine(const std::string& str);
@@ -37,6 +37,14 @@ class HttpRequestsParser
 		void		ParseOneHeader(const std::string& str);
 		void		ParseHeader(const std::string& str);
 		HttpHeader	ParseHeaderOneLine(const std::string& str);
+		void		RequestsParser(const std::string& str);
+		const HttpRequests& GetRequest() const;
+
+		/* Parsebody.cpp */
+		void		ParseContentLength(const std::string& text);
+		void		ParseTransferEncodingOneChunk(const std::string& text);
+		void		ParseTransferEncoding(const std::string& text);
+		bool		TransferEncodingImplementationCheck() const;
 
 		/* Exceptions */
 		class LineTooLongException : public std::exception
@@ -46,6 +54,12 @@ class HttpRequestsParser
 		};
 	
 		class RequestFirstLineException : public std::exception
+		{
+			public:
+				virtual const char* what() const throw();
+		};
+		
+		class RequestBodyException : public std::exception
 		{
 			public:
 				virtual const char* what() const throw();

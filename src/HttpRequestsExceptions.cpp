@@ -10,6 +10,11 @@ const char* HttpRequestsParser::RequestFirstLineException::what() const throw()
     return ("HttpRequestsParser: Invalid HTTP request line");
 }
 
+const char* HttpRequestsParser::RequestBodyException::what() const throw()
+{
+    return ("HttpRequestsParser: Invalid HTTP request Body");
+}
+
 const char* HttpRequestsParser::RequestHeaderException::what() const throw()
 {
     return ("HttpRequestsParser: Invalid HTTP request header");

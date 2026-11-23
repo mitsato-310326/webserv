@@ -7,6 +7,7 @@
 # include <iostream>
 
 # define NUMBER "0123456789"
+# define HEX NUMBER"ABCDEF""abcdef"
 # define ALPHABET "ABCDEFGHIJKLMNOPQRSTUVWXYZ""abcdefghijklmnopqrstuvwxyz"
 # define ALNUM ALPHABET"0123456789"
 # define METHODPERMITION ALNUM"!#$%&'*+-.^_`|~"
@@ -21,6 +22,8 @@ std::string 				DecodeString(const std::string &text);
 std::string 				toString(char decimal);
 std::string					toUpper(const std::string &text);
 std::vector<std::string> 	csplit(const std::string& text, char c);
+std::pair<std::string, std::string> cdvide(const std::string& text, char c);
+std::string					 strtrim(const std::string& text, const std::string& charset);
 
 class urlDecodeException : public std::exception
 {
