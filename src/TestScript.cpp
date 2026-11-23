@@ -22,8 +22,8 @@ void	check(const std::string& label, bool ok)
 
 int main(int argc, char **argv)
 {
-	bool HttpRequest = false;
-	bool String = true;
+	bool HttpRequest = true;
+	bool String = false;
 
 	if (HttpRequest)
 		HttpRequestTest(argc, argv);
