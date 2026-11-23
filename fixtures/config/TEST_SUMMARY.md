@@ -1,34 +1,34 @@
-# Engine X Configuration Parser Test Suite
+# Webserv Configuration Parser Test Suite
 
-包括的なテストスイートが完成しました。HTTP リクエストパーサーのテストと同様の構造を採用しています。
+仕様書（en.subject.pdf）IV.3「Configuration file」に基づいた包括的なテストスイート。
+NGINX風の設定ファイルパーサーの実装テスト用です。
 
 ## 📊 テスト統計
 
 | カテゴリ | ケース数 | 説明 |
 |---------|---------|------|
-| **valid** | 8 | 正常な設定ファイル |
-| **invalid** | 15 | 不正な設定ファイル |
-| **edge-cases** | 10 | 境界値・複雑な構成 |
+| **valid** | 9 | 正常な設定ファイル（仕様準拠） |
+| **invalid** | 12 | 不正な設定ファイル（エラー検出） |
+| **edge-cases** | 8 | 境界値・複雑な構成 |
 | **policy** | 5 | ポリシー依存ケース |
-| **合計** | **38** | **全テストケース** |
+| **合計** | **34** | **全テストケース** |
 
-## 🎯 テスト対象の主要ディレクティブ
+## 🎯 仕様に基づいたディレクティブ
 
-### サーバーレベル
-- `listen` - ポート指定
-- `server_name` - サーバー名
-- `root` - ドキュメントルート
-- `index` - デフォルトファイル
-- `error_page` - エラーページ設定
-- `client_max_body_size` - 最大アップロードサイズ
-- `ssl_certificate` / `ssl_certificate_key` - SSL設定
-- `return` - リダイレクト
+### サーバーレベル（server ブロック内）
+- **`listen`** - インターフェース:ポートペア（複数ポート対応）
+- **`server_name`** - サーバー識別（複数値対応）
+- **`root`** - ドキュメントルートパス
+- **`index`** - デフォルトファイル（複数値対応）
+- **`error_page`** - エラーページマッピング（複数コード対応）
+- **`client_max_body_size`** - 最大本文サイズ（単位付き: M, K）
 
-### ロケーションレベル
-- `root` - パス固有のドキュメントルート
-- `proxy_pass` - プロキシ設定
-- `cgi_pass` - CGI処理
-- `allowed_methods` - HTTPメソッド制限
+### ロケーションレベル（location ブロック内）
+- **`allowed_methods`** - HTTPメソッド制限（GET, POST, PUT, DELETE, HEAD等）
+- **`return`** - HTTPリダイレクト（ステータスコード＋URL）
+- **`cgi_path`** - CGIプログラムパス（ファイル拡張子別）
+- **`autoindex`** - ディレクトリリスティング（on/off）
+- **`upload_store`** - ファイルアップロード保存場所
 
 ## 📋 テストの実行方法
 
@@ -54,84 +54,89 @@
 
 ## 🧪 テストケース詳細
 
-### Valid Cases - 正常な設定（8件）
+### Valid Cases - 正常な設定（9件）
 
 1. **basic-server.conf**
-   - 最小限のサーバー設定
-   - ディレクティブ: listen, server_name, root
+   - 最小限の設定：listen, server_name, root
+   - テスト: ポート指定、サーバー名、ドキュメントルート
 
-2. **with-location.conf**
-   - ロケーションブロック付き
-   - 複数のロケーション定義と異なる設定
+2. **with-location-method.conf**
+   - ロケーションブロックと allowed_methods
+   - テスト: 複数のロケーション、メソッド制限
 
-3. **multiple-servers.conf**
-   - 複数のサーバーブロック
-   - 異なるポートとドメイン
+3. **with-error-pages.conf**
+   - error_page ディレクティブ
+   - テスト: 404、500系エラーコードのマッピング
 
-4. **with-ssl.conf**
-   - SSL/TLS設定
-   - 証明書パス指定
+4. **with-cgi.conf**
+   - CGI設定（cgi_path）
+   - テスト: PHP、Python等の拡張子別CGI
 
-5. **with-error-pages.conf**
-   - エラーページのカスタマイズ
-   - 複数のエラーコード対応
+5. **with-redirect.conf**
+   - return ディレクティブによるリダイレクト
+   - テスト: リダイレクトコード、URL指定
 
-6. **with-cgi.conf**
-   - CGI処理の設定
-   - 複数のスクリプトタイプ（.php, .py）
+6. **with-index.conf**
+   - index ディレクティブ（複数ファイル）
+   - テスト: デフォルトファイル指定
 
 7. **with-upload.conf**
    - ファイルアップロード設定
-   - クライアント最大本文サイズ制限
-   - HTTPメソッド制限
+   - テスト: upload_store、client_max_body_size
 
-8. **with-redirect.conf**
-   - リダイレクト設定
-   - return ディレクティブの使用
+8. **multiple-servers.conf**
+   - 複数ポート・複数サーバーブロック
+   - テスト: 3つのサーバー設定（ポート80, 8080, 443）
 
-### Invalid Cases - 不正な設定（15件）
+9. **with-directory-listing.conf**
+   - autoindex ディレクティブ
+   - テスト: オン/オフの切り替え
 
-#### 構文エラー（6件）
+### Invalid Cases - 不正な設定（12件）
+
+#### 必須ディレクティブ欠落
+- **missing-listen.conf** - 必須の listen ディレクティブ欠落
+
+#### 構文エラー
 - **missing-closing-brace.conf** - 閉じ括弧なし
-- **missing-opening-brace.conf** - 開き括弧なし
-- **missing-semicolon.conf** - セミコロンなし
-- **no-directive-value.conf** - 値のないディレクティブ
-- **location-without-path.conf** - location パス指定なし
-- **unknown-directive.conf** - 不明なディレクティブ
+- **missing-semicolon.conf** - セミコロン終端なし
+- **no-directive-value.conf** - ディレクティブ値が空
+- **location-without-path.conf** - location のパス指定なし
 
-#### 値のバリデーションエラー（5件）
+#### ポート指定エラー
 - **invalid-port.conf** - 非数値ポート（abc）
-- **port-out-of-range.conf** - 範囲外（70000）
+- **port-out-of-range.conf** - 範囲外ポート（70000 > 65535）
 - **negative-port.conf** - 負数ポート
-- **invalid-method.conf** - 無効なHTTPメソッド
-- **invalid-error-code.conf** - 無効なHTTPコード（999）
+
+#### ディレクティブ値エラー
+- **invalid-method.conf** - 無効なHTTPメソッド指定
 - **client-max-body-size-invalid.conf** - 無効なサイズ値
+- **invalid-error-code.conf** - 無効なHTTPコード（999）
+- **invalid-autoindex.conf** - autoindex の無効な値（on/off以外）
 
-#### 構造エラー（4件）
-- **empty-server.conf** - 空のサーバーブロック
-- **duplicate-listen.conf** - listen の重複（方針依存）
-- **nested-location.conf** - ネストされたlocationブロック
+### Edge Cases - 境界値・複雑な構成（8件）
 
-### Edge Cases - 境界値テスト（10件）
+#### 境界値テスト
+- **boundary-port-min.conf** - ポート 1（最小値）
+- **boundary-port-max.conf** - ポート 65535（最大値）
 
-- **boundary-port-min.conf** - ポート 1（最小）
-- **boundary-port-max.conf** - ポート 65535（最大）
+#### 複雑な構成
 - **max-body-size-with-unit.conf** - 単位付きサイズ（10M）
-- **whitespace-handling.conf** - 複数スペース処理
-- **tab-separation.conf** - タブ分離
-- **empty-location-block.conf** - 空のlocationブロック
+- **whitespace-handling.conf** - 複数スペース・タブの処理
 - **many-locations.conf** - 5つのロケーションブロック
-- **long-directive-value.conf** - 長い値の処理
-- **special-chars-in-path.conf** - パスの特殊文字
-- **ipv6-address.conf** - IPv6アドレス指定
+- **all-http-methods.conf** - 全HTTPメソッド指定（7個）
+- **multiple-index-files.conf** - 複数デフォルトファイル
+
+#### ネットワーク設定
+- **ipv6-address.conf** - IPv6アドレス指定（[::1]:8080）
 
 ### Policy Cases - ポリシー依存（5件）
 
-- **case-sensitive-directive.conf** - 大文字小文字（Server_Name）
-- **multiple-server-names.conf** - 複数のserver_name値
-- **multiple-error-codes.conf** - 複数のエラーコード指定
-- **redirect-code.conf** - return ディレクティブのコード
-- **multiple-allowed-methods.conf** - 複数のHTTPメソッド指定
+- **multiple-server-names.conf** - 1行での複数 server_name 値
+- **multiple-error-codes.conf** - 複数の error_page ディレクティブ
+- **return-redirect.conf** - return ディレクティブのリダイレクトコード
+- **case-sensitive-directive.conf** - ディレクティブ名の大文字小文字（Server_Name）
+- **multiple-cgi-extensions.conf** - 複数ファイル拡張子のCGI設定
 
 ## 📐 検証項目
 
@@ -190,12 +195,16 @@
 
 ## ✅ チェックリスト
 
-- [x] テストケース 38 個作成完了
-- [x] README.md - テスト説明書
+- [x] テストケース 34 個作成完了（仕様ベース）
+- [x] README.md - テスト説明書（仕様対応）
 - [x] manifest.json - テストメタデータ
-- [x] ConfigParser.hpp - インターフェース
+- [x] ConfigParser.hpp - インターフェース定義
 - [x] ConfigParser.cpp - スケルトン実装
 - [x] ConfigParserTest.cpp - テストハーネス
 - [ ] 詳細な実装開始
+  - [ ] トークンナイザー（字句解析）
+  - [ ] パーサー（構文解析）
+  - [ ] バリデーター（値検証）
 - [ ] ユニットテスト実行
 - [ ] 統合テスト実行
+- [ ] ストレステスト
