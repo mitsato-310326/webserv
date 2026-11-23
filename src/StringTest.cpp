@@ -55,7 +55,7 @@ bool csplitTest(std::string str)
 int StringTest(void)
 {
     bool DecodeString = false;
-    bool Csplit = true;
+    bool Csplit = false;
 
     if (DecodeString)
     {

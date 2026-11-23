@@ -20,6 +20,7 @@ std::vector<std::string> csplit(const std::string& text, char c)
     }
     return result;
 }
+
 std::vector<std::string> split(const std::string& text)
 {
     std::istringstream			stream(text);

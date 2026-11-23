@@ -1,44 +1,5 @@
 #include "../inc/HttpRequestsParser.hpp"
 
-HttpRequestsParser::HttpRequestsParser()
-{
-	_httprequests.versionMajor = 0;
-	_httprequests.versionMajor = 0;
-	_cursor = 0;
-}
-
-HttpRequestsParser::~HttpRequestsParser()
-{
-}
-
-HttpRequestsParser&	HttpRequestsParser::operator=(const HttpRequestsParser& rhs)
-{
-	_httprequests.body = rhs._httprequests.body;
-	_httprequests.headers = rhs._httprequests.headers;
-	_httprequests.method = rhs._httprequests.method;
-	_httprequests.path = rhs._httprequests.path;
-	_httprequests.query = rhs._httprequests.query;
-	_httprequests.target = rhs._httprequests.target;
-	_httprequests.versionMajor = rhs._httprequests.versionMajor;
-	_httprequests.versionMinor = rhs._httprequests.versionMinor;
-	return (*this);
-}
-
-void	HttpRequestsParser::isLineTooLong(const std::string& str, std::string::size_type max)
-{
-	std::string::size_type	end = str.find("\r\n", _cursor);
-	if (end == std::string::npos)
-	{
-		end = str.length();
-	}
-	if (end - _cursor > max)
-	{
-		throw LineTooLongException();
-	}
-	else
-		return ;
-}
-
 void	HttpRequestsParser::ParseMethod(const std::string& method)
 {
 	if (!StringPermition(method, METHODPERMITION))
@@ -135,11 +96,9 @@ void	HttpRequestsParser::ParseFirstLine(const std::string& str)
 {
 	if (_cursor != 0)
 		throw InternalSystemException();
-	std::string::size_type pos = str.find("\r\n");
-	if (pos == std::string::npos)
-		throw RequestFirstLineException();
-	std::string FirstLine = str.substr(_cursor, pos);
-	isLineTooLong(FirstLine, MAXLINEBYTES);
+	std::string FirstLine = ExtractLine(str);
+	if (FirstLine.empty())
+		throw InternalSystemException();
 	std::vector<std::string> words = split(FirstLine);
 	if (words.size() != 3)
 		throw RequestFirstLineException();
