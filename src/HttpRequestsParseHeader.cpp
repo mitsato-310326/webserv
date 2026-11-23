@@ -2,22 +2,23 @@
 
 HttpHeader	HttpRequestsParser::ParseHeaderOneLine(const std::string& str)
 {
-	std::vector<std::string> vector = csplit(str, ':');
+	std::pair<std::string, std::string> pair = cdvide(str, ':');
 	HttpHeader header;
-	header.name = vector[0];
-	header.value = vector[1];
+	header.name = pair.first;
+	header.value = strtrim(pair.second, " \t\r\n");
 	return (header);
 }
 
 static TransferEncoding ParseTransferCoding(const std::string& token)
 {
-    if (token == "chunked")
+    const std::string coding = toUpper(token);
+    if (coding == "CHUNKED")
         return CHUNKED;
-    if (token == "gzip")
+    if (coding == "GZIP")
         return GZIP;
-    if (token == "compress")
+    if (coding == "COMPRESS")
         return COMPRESS;
-    if (token == "deflate")
+    if (coding == "DEFLATE")
         return DEFLATE;
     return UNKNOWN;
 }
@@ -27,6 +28,8 @@ void	HttpRequestsParser::ParseOneHeader(const std::string& line)
 	if (line.empty())
 		throw RequestHeaderException ();
 	HttpHeader header = ParseHeaderOneLine(line);
+	if (header.name.empty())
+		throw RequestHeaderException ();
 	if (header.name == HOST)
 	{
 		if (!_httprequests.host.empty())
@@ -36,6 +39,8 @@ void	HttpRequestsParser::ParseOneHeader(const std::string& line)
 	else if (header.name == CONTENTLENGTH)
 	{
 		if (_httprequests.contentLength != -1)
+			throw RequestHeaderException ();
+		if (header.value.find_first_not_of(NUMBER) != std::string::npos)
 			throw RequestHeaderException ();
 		char *end;
 		_httprequests.contentLength = strtoul(header.value.c_str(), &end, 10);
@@ -53,8 +58,7 @@ void	HttpRequestsParser::ParseOneHeader(const std::string& line)
 			_httprequests.transferEncoding.push_back(type);
 		}
 	}
-	else
-		_httprequests.headers.push_back(header);
+	_httprequests.headers.push_back(header);
 }
 
 void	HttpRequestsParser::ParseHeader(const std::string& str)

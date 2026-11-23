@@ -27,20 +27,37 @@ static void	isLineTooLongTest(std::string str, std::string sample)
 	check(sample, flag);
 }
 
+static void CheckFixtureHeader(const HttpRequests& request, const std::string& sample)
+{
+	const std::string file = sample.substr(sample.find_last_of('/') + 1);
+	if (file == "header-port.http")
+		check(file + " stores Host with its port", request.host == "example.test:8080");
+	else if (file == "header-ipv6.http")
+		check(file + " stores IPv6 Host with its port", request.host == "[::1]:8080");
+	else if (file == "header-colon-value.http")
+	{
+		std::vector<HttpHeader>::const_iterator header = request.headers.begin();
+		while (header != request.headers.end() && header->name != "X-Item")
+			++header;
+		check(file + " stores X-Item = a:b:c",
+			header != request.headers.end() && header->value == "a:b:c");
+	}
+}
+
 static void ParseRequestTest(const std::string &text, const std::string &sample)
 {
 	HttpRequestsParser parser;
-	bool	flag;
-	flag = true;
 	try
 	{
 		parser.RequestsParser(text);
 	}
-		catch (const std::exception & e)
+	catch (const std::exception & e)
 	{
-		flag = false;
+		check(sample + ": " + e.what(), false);
+		return;
 	}
-	check(sample, flag);
+	check(sample, true);
+	CheckFixtureHeader(parser.GetRequest(), sample);
 }
 
 static void CheckHeader(const HttpRequests& request, std::size_t index,
@@ -97,15 +114,62 @@ static void TestHeaderStorage()
 	}
 }
 
+static void CheckContentLengthBody(const std::string& label,
+	const std::string& headers, const std::string& bytes,
+	const std::string& expected)
+{
+	HttpRequestsParser parser;
+	try
+	{
+		parser.RequestsParser("POST / HTTP/1.1\r\nHost: example.test\r\n"
+			+ headers + "\r\n" + bytes);
+		check(label, parser.GetRequest().body == expected);
+	}
+	catch (const std::exception& e)
+	{
+		check(label + ": " + e.what(), false);
+	}
+}
+
+static void TestContentLengthBody()
+{
+	title("Content-Length body");
+	CheckContentLengthBody("Exact body", "Content-Length: 5\r\n", "hello", "hello");
+	CheckContentLengthBody("Zero length", "Content-Length: 0\r\n", "", "");
+	const std::string binary("A\0\r\nB", 5);
+	CheckContentLengthBody("Body preserves NUL and CRLF",
+		"Content-Length: 5\r\n", binary, binary);
+	CheckContentLengthBody("Body stops at declared length",
+		"Content-Length: 5\r\n", "helloextra", "hello");
+	CheckContentLengthBody("No Content-Length and no body", "", "", "");
+
+	HttpRequestsParser parser;
+	try
+	{
+		parser.RequestsParser("POST / HTTP/1.1\r\nHost: example.test\r\n"
+			"Content-Length: 5\r\n\r\nhe");
+		check("Incomplete body does not parse as complete", false);
+	}
+	catch (const HttpRequestsParser::RequestBodyException&)
+	{
+		check("Incomplete body does not parse as complete", true);
+	}
+	catch (const std::exception& e)
+	{
+		check(std::string("Incomplete body: ") + e.what(), false);
+	}
+}
+
 int HttpRequestTest(int argc, char **argv)
 {
-	bool	HeaderStorage = true;	
 	bool	Extract = false;	
 	bool	isLineTooLongParser = false;	
-	bool	ParseFirstLine = false;	
 	
-	if (HeaderStorage)
+	if (argc == 1)
+	{
 		TestHeaderStorage();
+		TestContentLengthBody();
+	}
 	if (Extract)
 	{
 		title("ExtractLine");
@@ -126,15 +190,13 @@ int HttpRequestTest(int argc, char **argv)
 		isLineTooLongTest("abcde", "abcde");
 	}
 
-	if (ParseFirstLine && argc > 1)
+	if (argc > 1)
 	{
-		title ("ParseFirstLine");
-		bool flag = true;
+		title ("Request fixtures");
 		std::string text;
-		for (int i = 1; i < argc && flag == true; i++)
+		for (int i = 1; i < argc; i++)
 		{
-			flag = ReadTestFile(argv[i], text);
-			if (flag)
+			if (ReadTestFile(argv[i], text))
 				ParseRequestTest(text, argv[i]);
 			else
 				check(std::string("Could not read ") + argv[i], false);

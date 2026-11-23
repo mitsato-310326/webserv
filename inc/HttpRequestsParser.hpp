@@ -40,6 +40,8 @@ class HttpRequestsParser
 		void		RequestsParser(const std::string& str);
 		const HttpRequests& GetRequest() const { return _httprequests; }
 
+		/* Parsebody */
+		void		ParseContentLength(const std::string& text);
 
 		/* Exceptions */
 		class LineTooLongException : public std::exception
@@ -49,6 +51,12 @@ class HttpRequestsParser
 		};
 	
 		class RequestFirstLineException : public std::exception
+		{
+			public:
+				virtual const char* what() const throw();
+		};
+		
+		class RequestBodyException : public std::exception
 		{
 			public:
 				virtual const char* what() const throw();
