@@ -18,10 +18,12 @@ done
 
 build_dir=$(mktemp -d "${TMPDIR:-/tmp}/webserv-tests.XXXXXX")
 trap 'rm -rf -- "$build_dir"' EXIT
-mkdir "$build_dir/src"
+mkdir -p "$build_dir/src/HttpRequestsParser" "$build_dir/src/Test"
 cp Makefile "$build_dir/"
 cp -R inc "$build_dir/"
 cp src/*.cpp "$build_dir/src/"
+cp src/HttpRequestsParser/*.cpp "$build_dir/src/HttpRequestsParser/"
+cp src/Test/*.cpp "$build_dir/src/Test/"
 make -C "$build_dir" all
 "$build_dir/webserv" \
     "${valid[@]}" \

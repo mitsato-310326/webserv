@@ -2,7 +2,7 @@ POST / HTTP/1.1
 Host: example.test
 Transfer-Encoding: chunked
 
-3;foo=bar
+3;foo=bar;A=B;C=D
 abc
 0
 

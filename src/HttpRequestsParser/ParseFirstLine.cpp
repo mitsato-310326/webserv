@@ -1,4 +1,4 @@
-#include "../inc/HttpRequestsParser.hpp"
+#include "HttpRequestsParser.hpp"
 
 void	HttpRequestsParser::ParseMethod(const std::string& method)
 {
@@ -97,10 +97,14 @@ void	HttpRequestsParser::ParseFirstLine(const std::string& str)
 	if (_cursor != 0)
 		throw InternalSystemException();
 	std::string FirstLine = ExtractLine(str);
+	const std::string::size_type newline = str.find('\n');
+	if (newline != std::string::npos && (newline == 0 || str[newline - 1] != '\r'))
+		throw RequestFirstLineException();
 	if (FirstLine.empty())
 		throw InternalSystemException();
-	std::vector<std::string> words = split(FirstLine);
-	if (words.size() != 3)
+	FirstLine.erase(FirstLine.size() - 2);
+	std::vector<std::string> words = csplit(FirstLine, ' ');
+	if (words.size() != 3 || words[0].empty() || words[1].empty() || words[2].empty())
 		throw RequestFirstLineException();
 	ParseMethod(words[0]);
 	ParseUri(words[1]);

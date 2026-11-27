@@ -1,4 +1,4 @@
-# include "../inc/TestScript.hpp"
+# include "TestScript.hpp"
 
 static int	g_total = 0;
 static int	g_failed = 0;
