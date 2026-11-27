@@ -19,12 +19,12 @@ void	HttpRequestsParser::ParseTrailer(const std::string& text)
 	{
 		std::string line = ExtractLine(text);
 		if (line.empty())
-			return ;
+			throw RequestBodyException ();
 		if (line == "\r\n")
 			return ;
 		HttpHeader header = ParseHeaderOneLine(line);
 		if (header.name.empty())
-			throw RequestHeaderException ();
+			throw RequestBodyException ();
 	}
 }
 
@@ -50,7 +50,7 @@ void	HttpRequestsParser::ParseHeader(const std::string& str)
 	{
 		std::string line = ExtractLine(str);
 		if (line.empty())
-			return ;
+			throw RequestHeaderException ();
 		if (line == "\r\n")
 		{
 			if (_httprequests.host.empty())

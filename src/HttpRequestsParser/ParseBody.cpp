@@ -164,9 +164,5 @@ bool		HttpRequestsParser::TransferEncodingImplementationCheck() const
 		if (*it == UNKNOWN)
 		throw RequestBodyException ();
 	}
-	std::vector<TransferEncoding>::iterator it = std::find(te.begin(),
-	te.end(), CHUNKED);
-	if (it != te.end())
-	return (true);
-	return (false);
+	return (_httprequests.chunked);
 }

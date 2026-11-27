@@ -2,7 +2,7 @@
 
 void HttpRequestsParser::ParseContentLengthValue(const std::string& value)
 {
-	if (_httprequests.contentLength != -1)
+	if (_httprequests.contentLength != UNDIFINED)
 		throw RequestHeaderException();
 	if (!StringPermition(value, NUMBER))
 		throw RequestHeaderException();

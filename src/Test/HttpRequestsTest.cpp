@@ -93,7 +93,7 @@ static void ParseRequestTest(const std::string &text, const std::string &sample)
 		{
 			const HttpRequests& request = parser.GetRequest();
 			check(sample + ": trailer discarded", request.body.empty() &&
-				request.contentLength == -1 && request.headers.size() == 2);
+				request.contentLength == UNDIFINED && request.headers.size() == 2);
 		}
 		else if (shouldReject)
 			check(sample + ": expected incomplete/error result", false);
@@ -173,7 +173,7 @@ static void TestHeaderStorage()
 			"Transfer-Encoding: gzip, Chunked\r\n"
 			"\r\n0\r\n\r\n");
 		const HttpRequests& coded = transferCoded.GetRequest();
-		check("Content-Length absent", coded.contentLength == -1);
+		check("Content-Length absent", coded.contentLength == UNDIFINED);
 		check("Transfer-Encoding retains coding order",
 			coded.transferEncoding.size() == 2 &&
 			coded.transferEncoding[0] == GZIP &&
