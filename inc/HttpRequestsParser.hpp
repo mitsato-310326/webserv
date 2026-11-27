@@ -37,14 +37,17 @@ class HttpRequestsParser
 		void		ParseOneHeader(const std::string& str);
 		void		ParseHeader(const std::string& str);
 		HttpHeader	ParseHeaderOneLine(const std::string& str);
+		HostType	ParseHost(const std::string& authority) const;
 		void		RequestsParser(const std::string& str);
 		const HttpRequests& GetRequest() const;
+		void		ParseTrailer(const std::string& text);
 
 		/* Parsebody.cpp */
 		void		ParseContentLength(const std::string& text);
 		void		ParseTransferEncodingOneChunk(const std::string& text);
 		void		ParseTransferEncoding(const std::string& text);
 		bool		TransferEncodingImplementationCheck() const;
+		void		ParseRequestBody(const std::string& str);
 
 		/* Exceptions */
 		class LineTooLongException : public std::exception
@@ -78,6 +81,10 @@ class HttpRequestsParser
 		};
 
 	private:
+		void ParseHostValue(const std::string& value);
+		void ParseContentLengthValue(const std::string& value);
+		void ParseTransferEncodingValue(const std::string& value);
+
 		HttpRequests			_httprequests;
 		std::string::size_type	_cursor;
 };

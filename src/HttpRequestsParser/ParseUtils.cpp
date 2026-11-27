@@ -1,4 +1,4 @@
-#include "../inc/HttpRequestsParser.hpp"
+#include "HttpRequestsParser.hpp"
 
 HttpRequestsParser::HttpRequestsParser()
 {

@@ -1,5 +1,5 @@
-#include "../inc/TestScript.hpp"
-#include "../inc/StringUtils.hpp"
+#include "TestScript.hpp"
+#include "StringUtils.hpp"
 
 bool DecodeStringTest(std::string str, const std::string& label,
                              const std::string& expected)

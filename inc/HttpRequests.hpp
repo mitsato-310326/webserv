@@ -5,9 +5,9 @@
 # include <vector>
 # define MAXLINEBYTES 8192
 # define MAXCONTENTLENGTH 1024 * 1024
-# define HOST "Host"
-# define CONTENTLENGTH "Content-Length"
-# define TRANSFERENCODING "Transfer-Encoding"
+# define HOST "HOST"
+# define CONTENTLENGTH "CONTENT-LENGTH"
+# define TRANSFERENCODING "TRANSFER-ENCODING"
 
 struct HttpHeader
 {
@@ -22,6 +22,14 @@ enum TransferEncoding
 	COMPRESS,
 	DEFLATE,
 	UNKNOWN
+};
+
+enum HostType
+{
+	HOST_TYPE_UNKNOWN,
+	HOST_TYPE_DNS,
+	HOST_TYPE_IPV4,
+	HOST_TYPE_IPV6
 };
 
 struct HttpRequests
@@ -40,12 +48,14 @@ struct HttpRequests
 	std::string						absPort;
 
 	std::string						host;
+	HostType						hostType;
 	ssize_t							contentLength;
 	std::vector<TransferEncoding>	transferEncoding;
 	std::string::size_type			chunkBytesRemaining;
 	std::string::size_type			chunkBytes;
 
-	HttpRequests() : versionMajor(0), versionMinor(0) {}
+	HttpRequests() : versionMajor(0), versionMinor(0),
+		hostType(HOST_TYPE_UNKNOWN) {}
 };
 
 #endif
