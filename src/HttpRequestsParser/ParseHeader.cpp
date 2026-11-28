@@ -50,7 +50,10 @@ void	HttpRequestsParser::ParseHeader(const std::string& str)
 	{
 		std::string line = ExtractLine(str);
 		if (line.empty())
-			throw RequestHeaderException ();
+		{
+			_result.status = NeedMoreData;
+			return ;
+		}
 		if (line == "\r\n")
 		{
 			if (_httprequests.host.empty())

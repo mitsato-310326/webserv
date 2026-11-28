@@ -101,7 +101,10 @@ void	HttpRequestsParser::ParseFirstLine(const std::string& str)
 	if (newline != std::string::npos && (newline == 0 || str[newline - 1] != '\r'))
 		throw RequestFirstLineException();
 	if (FirstLine.empty())
-		throw InternalSystemException();
+	{
+		_result.status = NeedMoreData;
+		return ;
+	}
 	FirstLine.erase(FirstLine.size() - 2);
 	std::vector<std::string> words = csplit(FirstLine, ' ');
 	if (words.size() != 3 || words[0].empty() || words[1].empty() || words[2].empty())

@@ -89,63 +89,102 @@ void	HttpRequestsParser::ParseContentLength(const std::string& text)
 {
 	std::string::size_type len = _httprequests.contentLength;
 	std::string::size_type dist = len - _httprequests.body.size();
-	_httprequests.body += text.substr(_cursor, dist);
+	std::string tmp = text.substr(_cursor, dist);
+	_httprequests.body += tmp;
 	std::string::size_type size = _httprequests.body.size();
+	_cursor += tmp.size();
 	if (size < len)
-	throw RequestBodyException ();
+	{
+		_result.status = NeedMoreData;
+		return ;
+	}
 	else if(size > len)
-	throw RequestBodyException ();
+		throw RequestBodyException ();
 	return ;
 }
 
 void		HttpRequestsParser::ParseTransferEncodingOneChunk(const std::string& text)
 {
-	std::string hex = ExtractLine(text);
-	hex = hex.substr(0, hex.length() -2);
-	std::string::size_type extensionStart = hex.find(';');
-	std::string extensions;
-	if (extensionStart != std::string::npos)
+	if (_chunkStatus == ChunkBlockRemain)
 	{
-		extensions = hex.substr(extensionStart);
-		hex = hex.substr(0, extensionStart);
-		if (!IsChunkExtensionsValid(extensions))
+		std::string hex = ExtractLine(text);
+		if (hex.empty())
+		{
+			_result.status = NeedMoreData;
+			return ;
+		}
+		_chunkStatus = ChunkBytesRemain;
+		hex = hex.substr(0, hex.length() -2);
+		std::string::size_type extensionStart = hex.find(';');
+		std::string extensions;
+		if (extensionStart != std::string::npos)
+		{
+			extensions = hex.substr(extensionStart);
+			hex = hex.substr(0, extensionStart);
+			if (!IsChunkExtensionsValid(extensions))
 			throw RequestBodyException ();
+		}
+		errno = 0;
+		char* end = NULL;
+		if (!StringPermition(hex, HEX))
+		throw RequestBodyException ();
+		const char* begin = hex.c_str();
+		const unsigned long chunkSize = std::strtoul(begin, &end, 16);
+		if (errno == ERANGE)
+		throw RequestBodyException ();
+		_httprequests.chunkBytesRemaining = chunkSize;
+		_httprequests.chunkBytes = chunkSize;
 	}
-	errno = 0;
-	char* end = NULL;
-	if (!StringPermition(hex, HEX))
-		throw RequestBodyException ();
-	const char* begin = hex.c_str();
-	const unsigned long chunkSize = std::strtoul(begin, &end, 16);
-	if (errno == ERANGE)
-		throw RequestBodyException ();
-	_httprequests.chunkBytesRemaining = chunkSize;
-	_httprequests.chunkBytes = chunkSize;
-	std::string append = text.substr(_cursor, chunkSize);
-	_httprequests.body += append;
-	_cursor += append.size();
-	if (append.size() > _httprequests.chunkBytesRemaining)
-		throw RequestBodyException ();
-	else if (append.size() < _httprequests.chunkBytesRemaining)
+	if (_chunkStatus == ChunkBytesRemain)
 	{
-		_httprequests.chunkBytesRemaining -= append.size();
+		std::string append = text.substr(_cursor, _httprequests.chunkBytesRemaining);
+		_httprequests.body += append;
+		_cursor += append.size();
+		if (append.size() > _httprequests.chunkBytesRemaining)
 		throw RequestBodyException ();
+		else if (append.size() < _httprequests.chunkBytesRemaining)
+		{
+			_httprequests.chunkBytesRemaining -= append.size();
+			_result.status = NeedMoreData;
+			return ;
+		}
+		_chunkStatus = ChunkEnterRemain;
 	}
-	if (chunkSize == 0)
+	if (_chunkStatus == ChunkEnterRemain)
 	{
-		ParseTrailer(text);
-		return ;
-	}
-	if (text.substr(_cursor, 2) != "\r\n")
+		if (text.size() < _cursor + 2)
+		{
+			_result.status = NeedMoreData;
+			return ;
+		}
+		if (_httprequests.chunkBytes == 0)
+		{
+			ParseTrailer(text);
+			return ;
+		}
+		if (text.substr(_cursor, 2) != "\r\n")
 		throw RequestBodyException ();
-	_cursor += 2;
+		_cursor += 2;
+		_chunkStatus = ChunkBlockRemain;
+	}
 	return ;
 }
 
-void		HttpRequestsParser::ParseTransferEncoding(const std::string& text)
+void	HttpRequestsParser::ParseTransferEncoding(const std::string& text)
 {
+	if (_chunkStatus == ChunkNotStarted)
+		_chunkStatus = ChunkBlockRemain;
 	while (_httprequests.chunkBytes > 0)
-	ParseTransferEncodingOneChunk(text);
+	{
+		if (text.size() <  _cursor + 1)
+		{
+			_result.status = NeedMoreData;
+			return ;
+		}
+		ParseTransferEncodingOneChunk(text);
+		if (_result.status == NeedMoreData)
+			return ;
+	}
 }
 
 bool		HttpRequestsParser::TransferEncodingImplementationCheck() const

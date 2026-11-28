@@ -86,6 +86,8 @@ class HttpRequestsParser
 		void ParseTransferEncodingValue(const std::string& value);
 
 		HttpRequests			_httprequests;
+		ParseResult				_result;
+		ChunkParseStatus		_chunkStatus;
 		std::string::size_type	_cursor;
 };
 
