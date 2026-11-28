@@ -2,13 +2,15 @@
 
 HttpRequestsParser::HttpRequestsParser()
 {
-	_httprequests.versionMajor = 0;
-	_httprequests.versionMinor = 0;
-	_httprequests.chunkBytesRemaining = 0;
-	_httprequests.chunkBytes = std::string::npos;
-	_httprequests.transferEncoding.clear();
+	_request.versionMajor = 0;
+	_request.versionMinor = 0;
+	_request.chunkBytesRemaining = 0;
+	_request.chunkBytes = std::string::npos;
+	_request.transferEncoding.clear();
 	_result.status = ParseLoad;
-	_result.nstatus = First;
+	_result.errorReason = NoParseError;
+	_phase = ReadRequestLine;
+	_result.consumed = 0;
 	_chunkStatus = ChunkNotStarted;
 	_cursor = 0;
 }
@@ -17,35 +19,24 @@ HttpRequestsParser::~HttpRequestsParser()
 {
 }
 
-HttpRequestsParser&	HttpRequestsParser::operator=(const HttpRequestsParser& rhs)
-{
-	_httprequests.body = rhs._httprequests.body;
-	_httprequests.headers = rhs._httprequests.headers;
-	_httprequests.method = rhs._httprequests.method;
-	_httprequests.path = rhs._httprequests.path;
-	_httprequests.query = rhs._httprequests.query;
-	_httprequests.target = rhs._httprequests.target;
-	_httprequests.versionMajor = rhs._httprequests.versionMajor;
-	_httprequests.versionMinor = rhs._httprequests.versionMinor;
-	return (*this);
-}
-
-
 std::string::size_type	HttpRequestsParser::LineLength(const std::string& str)
 {
-	std::string::size_type	end = str.find("\r\n", _cursor);
-	std::string::size_type len;
-	if (end == std::string::npos)
+	const std::string::size_type newline = str.find('\n', _cursor);
+	if (newline == std::string::npos)
 	{
-		len = str.length() - _cursor + 2;
-		if (len > MAXLINEBYTES)
-			throw LineTooLongException ();
+		const std::string::size_type pending = str.size() - _cursor;
+		const bool endsWithCR = pending != 0 && str[str.size() - 1] == '\r';
+		const std::string::size_type terminatorBytes = endsWithCR ? 1 : 2;
+		if (pending > MAXLINEBYTES - terminatorBytes)
+			throw LineTooLongException();
 		return (std::string::npos);
 	}
-	len = end - _cursor + 2;
-	if (len > MAXLINEBYTES)
-		throw LineTooLongException ();
-	return (len);
+	if (newline == _cursor || str[newline - 1] != '\r')
+		throw RequestParseException();
+	const std::string::size_type length = newline - _cursor + 1;
+	if (length > MAXLINEBYTES)
+		throw LineTooLongException();
+	return (length);
 }
 
 /* byte が途中の時、この関数内でループ待ち処理を行う想定。 */
@@ -53,8 +44,20 @@ std::string	HttpRequestsParser::ExtractLine(const std::string &str)
 {
 	std::string::size_type len =  LineLength(str);
 	if (len == std::string::npos)
+	{
+		_result.status = NeedMoreData;
 		return ("");
+	}
 	std::string line = str.substr(_cursor, len);
 	_cursor += len;
 	return (line);
+}
+
+std::string HttpRequestsParser::StripTrailingCRLF(const std::string& line)
+{
+	const std::string::size_type crlfLength = sizeof(CLEF) - 1;
+	if (line.size() < crlfLength ||
+		line.compare(line.size() - crlfLength, crlfLength, CLEF) != 0)
+		return (line);
+	return (line.substr(0, line.size() - crlfLength));
 }

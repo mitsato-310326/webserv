@@ -1,7 +1,7 @@
 NAME = webserv
 SERVER = webserv-server
 
-SRC = src/HttpRequestsParser/ParseFirstLine.cpp \
+SRC = src/HttpRequestsParser/ParseRequestLine.cpp \
 	  src/HttpRequestsParser/ParseHost.cpp \
 	  src/HttpRequestsParser/ParseContentLength.cpp \
 	  src/HttpRequestsParser/ParseTransferEncoding.cpp \
@@ -12,14 +12,15 @@ SRC = src/HttpRequestsParser/ParseFirstLine.cpp \
 	  src/HttpRequestsParser/Exceptions.cpp \
 	  src/Test/HttpRequestsTest.cpp \
 	  src/Test/TestScript.cpp \
-	  src/Test/StringTest.cpp \
-	  src/StringUtils.cpp
+	  src/StringUtils.cpp \
+	  src/UrlDecode.cpp
 
 OBJS = ${SRC:.cpp=.o}
 SERVER_SRC = src/main.cpp src/listener.cpp src/event_loop.cpp \
              src/client_events.cpp src/client.cpp src/HttpRequestsParser/ParserMock.cpp \
-			 src/HttpRequestsParser/ParseFirstLine.cpp src/HttpRequestsParser/ParseHost.cpp \
-			 src/StringUtils.cpp
+			 src/HttpRequestsParser/ParseRequestLine.cpp src/HttpRequestsParser/ParseHost.cpp \
+			 src/StringUtils.cpp \
+	  src/UrlDecode.cpp
 SERVER_OBJS = ${SERVER_SRC:.cpp=.o}
 ALL_OBJS = $(sort ${OBJS} ${SERVER_OBJS})
 DEPS = ${ALL_OBJS:.o=.d}

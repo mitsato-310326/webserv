@@ -1,14 +1,18 @@
 #include "HttpRequestsParser.hpp"
+#include <limits>
 
 void HttpRequestsParser::ParseContentLengthValue(const std::string& value)
 {
-	if (_httprequests.contentLength != UNDIFINED)
+	if (_request.contentLength != UNDEFINED)
 		throw RequestHeaderException();
-	if (!StringPermition(value, NUMBER))
+	if (!ContainsOnly(value, NUMBER))
 		throw RequestHeaderException();
 	errno = 0;
 	const unsigned long length = strtoul(value.c_str(), NULL, 10);
-	if (errno == ERANGE)
+	if (errno == ERANGE ||
+		length > static_cast<unsigned long>(std::numeric_limits<ssize_t>::max()))
 		throw RequestHeaderException();
-	_httprequests.contentLength = length;
+	if (length > MAXCONTENTLENGTH)
+		throw RequestParseException(BodyTooLarge);
+	_request.contentLength = static_cast<ssize_t>(length);
 }

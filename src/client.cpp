@@ -12,7 +12,7 @@ void client::appendData(const char *data, size_t len) {
   parser_.Parse(buffer_);
 }
 
-bool client::isSendFinshed() const { return sent_ >= response_.size(); }
+bool client::isSendFinished() const { return sent_ >= response_.size(); }
 
 ssize_t client::sendPending(int fd) {
   const char *nextByte = response_.c_str() + sent_;

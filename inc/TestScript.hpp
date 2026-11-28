@@ -21,6 +21,4 @@ void	check(const std::string& label, bool ok);
 /* HttpRequestTest */
 int HttpRequestTest(int argc, char **argv);
 
-/* StringUtilTest */
-int StringTest(void);
 #endif

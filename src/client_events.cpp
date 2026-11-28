@@ -20,9 +20,9 @@ static bool readClient(int fd, client &connection) {
 }
 
 static bool writeClient(pollfd &entry, client &connection) {
-  if (!connection.isSendFinshed() && connection.sendPending(entry.fd) < 0)
+  if (!connection.isSendFinished() && connection.sendPending(entry.fd) < 0)
     return canRetryIO();
-  if (connection.isSendFinshed())
+  if (connection.isSendFinished())
     entry.events &= ~POLLOUT;
   return true;
 }

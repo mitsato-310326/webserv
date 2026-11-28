@@ -22,12 +22,6 @@ void	check(const std::string& label, bool ok)
 
 int main(int argc, char **argv)
 {
-	bool HttpRequest = true;
-	bool String = false;
-
-	if (HttpRequest)
-		HttpRequestTest(argc, argv);
-	if (String)
-		StringTest();
+	HttpRequestTest(argc, argv);
 	return (g_failed == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 }

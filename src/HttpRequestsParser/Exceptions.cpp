@@ -5,7 +5,7 @@ const char* HttpRequestsParser::LineTooLongException::what() const throw()
     return ("HttpRequestsParser: HTTP request line is too long");
 }
 
-const char* HttpRequestsParser::RequestFirstLineException::what() const throw()
+const char* HttpRequestsParser::RequestLineException::what() const throw()
 {
     return ("HttpRequestsParser: Invalid HTTP request line");
 }

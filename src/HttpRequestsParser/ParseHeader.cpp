@@ -1,70 +1,62 @@
 #include "HttpRequestsParser.hpp"
 
-HttpHeader	HttpRequestsParser::ParseHeaderOneLine(const std::string& str)
-{
-	std::pair<std::string, std::string> pair = cdvide(str, ':');
-	HttpHeader header;
-	if (!StringPermition(pair.first, METHODPERMITION))
-		throw RequestHeaderException ();
-	header.name = toUpper(pair.first);
-	header.value = strtrim(pair.second, " \t\r\n");
-	if (header.value.find_first_of(OPERATORCHAR, 0, sizeof(OPERATORCHAR)) != std::string::npos)
-		throw RequestHeaderException ();
-	return (header);
-}
-
-void	HttpRequestsParser::ParseTrailer(const std::string& text)
+void HttpRequestsParser::ParseHeader(const std::string& buffer)
 {
 	while (true)
 	{
-		std::string line = ExtractLine(text);
-		if (line.empty())
-			throw RequestBodyException ();
-		if (line == "\r\n")
-			return ;
-		HttpHeader header = ParseHeaderOneLine(line);
-		if (header.name.empty())
-			throw RequestBodyException ();
+		const std::string line = ExtractLine(buffer);
+		if (_result.status == NeedMoreData)
+			return;
+		if (line == HEADERSEND)
+		{
+			if (_request.host.empty())
+				throw RequestHeaderException();
+			return;
+		}
+		const HttpHeader header = ParseHeaderLine(line);
+		ApplyHeaderValue(header);
+		_request.headers.push_back(header);
 	}
 }
 
-void	HttpRequestsParser::ParseOneHeader(const std::string& line)
+HttpHeader HttpRequestsParser::ParseHeaderLine(const std::string& line)
 {
-	if (line.empty())
-		throw RequestHeaderException ();
-	HttpHeader header = ParseHeaderOneLine(line);
-	if (header.name.empty())
-		throw RequestHeaderException ();
+	const std::pair<std::string, std::string> field =
+		SplitAtFirst(StripTrailingCRLF(line), ':');
+	if (!ContainsOnly(field.first, TOKEN_CHARS))
+		throw RequestHeaderException();
+	if (field.second.find_first_of(FORBIDDEN_HEADER_VALUE_CHARS, 0,
+			sizeof(FORBIDDEN_HEADER_VALUE_CHARS) - 1) != std::string::npos)
+		throw RequestHeaderException();
+
+	HttpHeader header;
+	header.name = toUpper(field.first);
+	header.value = strtrim(field.second, " \t");
+	return (header);
+}
+
+void HttpRequestsParser::ApplyHeaderValue(const HttpHeader& header)
+{
 	if (header.name == HOST)
 		ParseHostValue(header.value);
 	else if (header.name == CONTENTLENGTH)
 		ParseContentLengthValue(header.value);
 	else if (header.name == TRANSFERENCODING)
 		ParseTransferEncodingValue(header.value);
-	_httprequests.headers.push_back(header);
 }
 
-void	HttpRequestsParser::ParseHeader(const std::string& str)
+void HttpRequestsParser::ParseTrailer(const std::string& buffer)
 {
 	while (true)
 	{
-		std::string line = ExtractLine(str);
-		if (line.empty())
-		{
-			_result.status = NeedMoreData;
-			return ;
-		}
-		if (line == "\r\n")
-		{
-			if (_httprequests.host.empty())
-				throw RequestHeaderException ();
-			return ;
-		}
-		ParseOneHeader(line);
+		const std::string line = ExtractLine(buffer);
+		if (_result.status == NeedMoreData || line == CLEF)
+			return;
+		ParseHeaderLine(line);
 	}
 }
 
 const HttpRequests& HttpRequestsParser::GetRequest() const
 {
-	return (_httprequests);
+	return (_request);
 }

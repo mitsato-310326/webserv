@@ -1,27 +1,124 @@
 #include "HttpRequestsParser.hpp"
 
-static bool IsChunkExtensionQuotedValue(const std::string& value)
+static bool IsChunkExtensionsValid(const std::string& extensions);
+static bool IsChunkExtensionQuotedValue(const std::string& value);
+
+void	HttpRequestsParser::ParseRequestBody(const std::string& str)
 {
-	if (value.size() < 2 || value[0] != '"' || value[value.size() - 1] != '"')
+	const bool hasContentLength = _request.contentLength >= 0;
+	if (hasContentLength && !_request.transferEncoding.empty())
+		throw RequestHeaderException();
+	if (hasContentLength)
+		ParseContentLength(str);
+	else if (TransferEncodingImplementationCheck())
+		ParseTransferEncoding(str);
+}
+
+bool		HttpRequestsParser::TransferEncodingImplementationCheck() const
+{
+	const std::vector<TransferEncoding>& transferCodings = _request.transferEncoding;
+	if (transferCodings.empty())
 		return (false);
-	for (std::string::size_type i = 1; i < value.size() - 1; ++i)
+	if (transferCodings.back() != CHUNKED)
+		throw RequestHeaderException();
+	for (std::vector<TransferEncoding>::const_iterator it = transferCodings.begin(); it < transferCodings.end(); it++)
 	{
-		const unsigned char ch = static_cast<unsigned char>(value[i]);
-		if (ch == '\\')
-		{
-			if (++i >= value.size() - 1)
-				return (false);
-			const unsigned char escaped = static_cast<unsigned char>(value[i]);
-			if (!(escaped == '\t' || escaped == ' ' ||
-				(escaped >= 0x21 && escaped <= 0x7e) || escaped >= 0x80))
-				return (false);
-		}
-		else if (!(ch == '\t' || ch == ' ' || ch == 0x21 ||
-			(ch >= 0x23 && ch <= 0x5b) ||
-			(ch >= 0x5d && ch <= 0x7e) || ch >= 0x80))
-			return (false);
+		if (*it == GZIP || *it == COMPRESS || *it == DEFLATE || *it == UNKNOWN)
+			throw RequestParseException(UnsupportedTransferEncoding);
 	}
-	return (true);
+	return (_request.chunked);
+}
+
+void	HttpRequestsParser::ParseContentLength(const std::string& text)
+{
+	std::string::size_type contentLength = _request.contentLength;
+	std::string::size_type remainingBytes = contentLength - _request.body.size();
+	const std::string incomingBodyBytes = text.substr(_cursor, remainingBytes);
+	_request.body += incomingBodyBytes;
+	const std::string::size_type accumulatedBodySize = _request.body.size();
+	_cursor += incomingBodyBytes.size();
+	if (accumulatedBodySize < contentLength)
+		_result.status = NeedMoreData;
+	return ;
+}
+
+void HttpRequestsParser::ParseTransferEncoding(const std::string& text)
+{
+	while (_chunkStatus != ChunkComplete)
+	{
+		ChunkParseStatus nextStatus = _chunkStatus;
+		switch (_chunkStatus)
+		{
+			case ChunkNotStarted:
+			case ChunkBlockRemain:
+				ParseChunkSizeLine(text);
+				nextStatus = _request.chunkBytes == 0 ? ChunkTrailerRemain : ChunkBytesRemain;
+				break;
+			case ChunkBytesRemain:
+				ParseChunkData(text);
+				nextStatus = ChunkEnterRemain;
+				break;
+			case ChunkEnterRemain:
+				ParseChunkDelimiter(text);
+				nextStatus = ChunkBlockRemain;
+				break;
+			case ChunkTrailerRemain:
+				ParseTrailer(text);
+				nextStatus = ChunkComplete;
+				break;
+			case ChunkComplete:
+				return;
+		}
+		if (_result.status != ParseLoad)
+			return;
+		_chunkStatus = nextStatus;
+	}
+}
+
+void HttpRequestsParser::ParseChunkSizeLine(const std::string& text)
+{
+	std::string sizeLine = ExtractLine(text);
+	if (_result.status == NeedMoreData)
+		return;
+	sizeLine = StripTrailingCRLF(sizeLine);
+	const std::string::size_type extensionStart = sizeLine.find(';');
+	if (extensionStart != std::string::npos)
+	{
+		if (!IsChunkExtensionsValid(sizeLine.substr(extensionStart)))
+			throw RequestBodyException();
+		sizeLine.erase(extensionStart);
+	}
+	if (!ContainsOnly(sizeLine, HEX))
+		throw RequestBodyException();
+	errno = 0;
+	const unsigned long chunkSize = std::strtoul(sizeLine.c_str(), NULL, 16);
+	if (errno == ERANGE || chunkSize > MAXCONTENTLENGTH - _request.body.size())
+		throw RequestParseException(BodyTooLarge);
+	_request.chunkBytesRemaining = chunkSize;
+	_request.chunkBytes = chunkSize;
+}
+
+void HttpRequestsParser::ParseChunkData(const std::string& text)
+{
+	const std::string chunkData = text.substr(_cursor, _request.chunkBytesRemaining);
+	_request.body += chunkData;
+	_cursor += chunkData.size();
+	_request.chunkBytesRemaining -= chunkData.size();
+	if (_request.chunkBytesRemaining != 0)
+		_result.status = NeedMoreData;
+}
+
+void HttpRequestsParser::ParseChunkDelimiter(const std::string& text)
+{
+	const std::string::size_type delimiterLength = sizeof(CLEF) - 1;
+	if (text.size() - _cursor < delimiterLength)
+	{
+		_result.status = NeedMoreData;
+		return;
+	}
+	if (text.compare(_cursor, delimiterLength, CLEF) != 0)
+		throw RequestBodyException();
+	_cursor += delimiterLength;
 }
 
 static bool IsChunkExtensionsValid(const std::string& extensions)
@@ -57,15 +154,15 @@ static bool IsChunkExtensionsValid(const std::string& extensions)
 		std::string item = strtrim(extensions.substr(itemStart, cursor - itemStart), " \t");
 		if (item.empty())
 			return (false);
-		std::pair<std::string, std::string> pair = cdvide(item, '=');
+		std::pair<std::string, std::string> pair = SplitAtFirst(item, '=');
 		std::string name = strtrim(pair.first, " \t");
-		if (!StringPermition(name, METHODPERMITION))
+		if (!ContainsOnly(name, TOKEN_CHARS))
 			return (false);
 		if (item.find('=') != std::string::npos)
 		{
 			std::string value = strtrim(pair.second, " \t");
 			if (value.empty() ||
-				(!StringPermition(value, METHODPERMITION) &&
+				(!ContainsOnly(value, TOKEN_CHARS) &&
 				 !IsChunkExtensionQuotedValue(value)))
 				return (false);
 		}
@@ -73,135 +170,26 @@ static bool IsChunkExtensionsValid(const std::string& extensions)
 	return (true);
 }
 
-void	HttpRequestsParser::ParseRequestBody(const std::string& str)
+static bool IsChunkExtensionQuotedValue(const std::string& value)
 {
-	if (_httprequests.contentLength >= 0 && TransferEncodingImplementationCheck())
-		throw RequestHeaderException ();
-	else if (_httprequests.contentLength >= 0)
-		ParseContentLength(str);
-	else if (TransferEncodingImplementationCheck())
-			ParseTransferEncoding(str);
-	else
-		return ;
-}
-
-void	HttpRequestsParser::ParseContentLength(const std::string& text)
-{
-	std::string::size_type len = _httprequests.contentLength;
-	std::string::size_type dist = len - _httprequests.body.size();
-	std::string tmp = text.substr(_cursor, dist);
-	_httprequests.body += tmp;
-	std::string::size_type size = _httprequests.body.size();
-	_cursor += tmp.size();
-	if (size < len)
-	{
-		_result.status = NeedMoreData;
-		return ;
-	}
-	else if(size > len)
-		throw RequestBodyException ();
-	return ;
-}
-
-void		HttpRequestsParser::ParseTransferEncodingOneChunk(const std::string& text)
-{
-	if (_chunkStatus == ChunkBlockRemain)
-	{
-		std::string hex = ExtractLine(text);
-		if (hex.empty())
-		{
-			_result.status = NeedMoreData;
-			return ;
-		}
-		_chunkStatus = ChunkBytesRemain;
-		hex = hex.substr(0, hex.length() -2);
-		std::string::size_type extensionStart = hex.find(';');
-		std::string extensions;
-		if (extensionStart != std::string::npos)
-		{
-			extensions = hex.substr(extensionStart);
-			hex = hex.substr(0, extensionStart);
-			if (!IsChunkExtensionsValid(extensions))
-			throw RequestBodyException ();
-		}
-		errno = 0;
-		char* end = NULL;
-		if (!StringPermition(hex, HEX))
-		throw RequestBodyException ();
-		const char* begin = hex.c_str();
-		const unsigned long chunkSize = std::strtoul(begin, &end, 16);
-		if (errno == ERANGE)
-		throw RequestBodyException ();
-		_httprequests.chunkBytesRemaining = chunkSize;
-		_httprequests.chunkBytes = chunkSize;
-	}
-	if (_chunkStatus == ChunkBytesRemain)
-	{
-		std::string append = text.substr(_cursor, _httprequests.chunkBytesRemaining);
-		_httprequests.body += append;
-		_cursor += append.size();
-		if (append.size() > _httprequests.chunkBytesRemaining)
-		throw RequestBodyException ();
-		else if (append.size() < _httprequests.chunkBytesRemaining)
-		{
-			_httprequests.chunkBytesRemaining -= append.size();
-			_result.status = NeedMoreData;
-			return ;
-		}
-		_chunkStatus = ChunkEnterRemain;
-	}
-	if (_chunkStatus == ChunkEnterRemain)
-	{
-		if (text.size() < _cursor + 2)
-		{
-			_result.status = NeedMoreData;
-			return ;
-		}
-		if (_httprequests.chunkBytes == 0)
-		{
-			ParseTrailer(text);
-			return ;
-		}
-		if (text.substr(_cursor, 2) != "\r\n")
-		throw RequestBodyException ();
-		_cursor += 2;
-		_chunkStatus = ChunkBlockRemain;
-	}
-	return ;
-}
-
-void	HttpRequestsParser::ParseTransferEncoding(const std::string& text)
-{
-	if (_chunkStatus == ChunkNotStarted)
-		_chunkStatus = ChunkBlockRemain;
-	while (_httprequests.chunkBytes > 0)
-	{
-		if (text.size() <  _cursor + 1)
-		{
-			_result.status = NeedMoreData;
-			return ;
-		}
-		ParseTransferEncodingOneChunk(text);
-		if (_result.status == NeedMoreData)
-			return ;
-	}
-}
-
-bool		HttpRequestsParser::TransferEncodingImplementationCheck() const
-{
-	std::vector<TransferEncoding> te = _httprequests.transferEncoding;
-	if (te.empty())
+	if (value.size() < 2 || value[0] != '"' || value[value.size() - 1] != '"')
 		return (false);
-	for (std::vector<TransferEncoding>::iterator it = te.begin(); it < te.end(); it++)
+	for (std::string::size_type i = 1; i < value.size() - 1; ++i)
 	{
-		if (*it == GZIP)
-		throw RequestBodyException ();
-		if (*it == COMPRESS)
-		throw RequestBodyException ();
-		if (*it == DEFLATE)
-		throw RequestBodyException ();
-		if (*it == UNKNOWN)
-		throw RequestBodyException ();
+		const unsigned char ch = static_cast<unsigned char>(value[i]);
+		if (ch == '\\')
+		{
+			if (++i >= value.size() - 1)
+				return (false);
+			const unsigned char escaped = static_cast<unsigned char>(value[i]);
+			if (!(escaped == '\t' || escaped == ' ' ||
+				(escaped >= 0x21 && escaped <= 0x7e) || escaped >= 0x80))
+				return (false);
+		}
+		else if (!(ch == '\t' || ch == ' ' || ch == 0x21 ||
+			(ch >= 0x23 && ch <= 0x5b) ||
+			(ch >= 0x5d && ch <= 0x7e) || ch >= 0x80))
+			return (false);
 	}
-	return (_httprequests.chunked);
+	return (true);
 }
