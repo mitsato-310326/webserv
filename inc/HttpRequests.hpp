@@ -34,13 +34,28 @@ enum HostType
 };
 
 enum ParseStatus {
+	ParseLoad,
 	NeedMoreData,
 	Complete,
 	ParseError
 };
 
+enum NeedMoreDataStatus {
+	First,
+	Header,
+	Body
+};
+
+enum ChunkParseStatus {
+	ChunkNotStarted,
+	ChunkBytesRemain,
+	ChunkEnterRemain,
+	ChunkBlockRemain
+};
+
 struct ParseResult {
     ParseStatus status;
+	NeedMoreDataStatus nstatus;
     std::size_t consumed;  // Complete のとき、先頭の1リクエストが占めたバイト数
 };
 

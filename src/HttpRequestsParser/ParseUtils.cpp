@@ -7,6 +7,9 @@ HttpRequestsParser::HttpRequestsParser()
 	_httprequests.chunkBytesRemaining = 0;
 	_httprequests.chunkBytes = std::string::npos;
 	_httprequests.transferEncoding.clear();
+	_result.status = ParseLoad;
+	_result.nstatus = First;
+	_chunkStatus = ChunkNotStarted;
 	_cursor = 0;
 }
 

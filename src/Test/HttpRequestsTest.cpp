@@ -1,5 +1,6 @@
 #include "TestScript.hpp"
 #include "HttpRequestsParser.hpp"
+#include <sstream>
 
 static bool ReadTestFile(std::string path, std::string &text)
 {
@@ -232,6 +233,63 @@ static void TestContentLengthBody()
 	}
 }
 
+static bool ParsesByteByByte(const std::string& request,
+	const std::string& expectedBody, std::string& failure)
+{
+	HttpRequestsParser parser;
+	std::string buffer;
+	for (std::string::size_type i = 0; i < request.size(); ++i)
+	{
+		buffer.append(request, i, 1);
+		try
+		{
+			parser.RequestsParser(buffer);
+		}
+		catch (const std::exception& e)
+		{
+			std::ostringstream message;
+			message << "failed after byte " << i + 1 << ": " << e.what();
+			failure = message.str();
+			return (false);
+		}
+	}
+	if (parser.GetRequest().body != expectedBody)
+	{
+		std::ostringstream message;
+		message << "parsed body differs (expected " << expectedBody.size()
+			<< " bytes, got " << parser.GetRequest().body.size()
+			<< "; transfer codings "
+			<< parser.GetRequest().transferEncoding.size()
+			<< "; chunked " << parser.GetRequest().chunked
+			<< "; content length " << parser.GetRequest().contentLength << ")";
+		failure = message.str();
+		return (false);
+	}
+	return (true);
+}
+
+static void TestFragmentedRequests()
+{
+	title("Fragmented requests");
+	const std::string fixedBodyRequest =
+		"POST / HTTP/1.1\r\nHost: example.test\r\nContent-Length: 5\r\n\r\nhello";
+	std::string failure;
+	check("Content-Length request at every split",
+		ParsesByteByByte(fixedBodyRequest, "hello", failure));
+	if (!failure.empty())
+		std::cout << "    " << failure << "\n";
+
+	const std::string chunkedBodyRequest =
+		"POST / HTTP/1.1\r\nHost: example.test\r\n"
+		"Transfer-Encoding: chunked\r\n\r\n"
+		"5\r\nhello\r\n0\r\n\r\n";
+	failure.clear();
+	check("Chunked request at every split",
+		ParsesByteByByte(chunkedBodyRequest, "hello", failure));
+	if (!failure.empty())
+		std::cout << "    " << failure << "\n";
+}
+
 static void ChunkSizeTest(const std::string& text)
 {
 	HttpRequestsParser	http;
@@ -258,6 +316,7 @@ int HttpRequestTest(int argc, char **argv)
 	const bool	isLineTooLongParser = false;
 	const bool	RequestFixtures = true;
 
+	TestFragmentedRequests();
 
 	if (chunksize)
 	{
