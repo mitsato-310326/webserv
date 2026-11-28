@@ -1,10 +1,8 @@
 #include "HttpRequestsParser.hpp"
 
-#include <arpa/inet.h>
-
 static bool IsPortValid(const std::string& port)
 {
-	return (StringPermition(port, NUMBER));
+	return (ContainsOnly(port, NUMBER));
 }
 
 static bool IsIPv4Address(const std::string& address)
@@ -15,7 +13,7 @@ static bool IsIPv4Address(const std::string& address)
 	for (std::vector<std::string>::const_iterator it = octets.begin();
 		it != octets.end(); ++it)
 	{
-		if (!StringPermition(*it, NUMBER) || it->size() > 3 ||
+		if (!ContainsOnly(*it, NUMBER) || it->size() > 3 ||
 			(it->size() > 1 && (*it)[0] == '0'))
 			return (false);
 		unsigned int value = 0;
@@ -27,16 +25,44 @@ static bool IsIPv4Address(const std::string& address)
 	return (true);
 }
 
+// A dotted IPv4 tail occupies two IPv6 groups.
+static bool CountIPv6Groups(const std::string& part, bool allowIPv4, std::size_t& count)
+{
+	if (part.empty())
+		return true;
+	const std::vector<std::string> groups = csplit(part, ':');
+	for (std::size_t i = 0; i < groups.size(); ++i)
+	{
+		const std::string& group = groups[i];
+		if (allowIPv4 && i + 1 == groups.size() && group.find('.') != std::string::npos)
+		{
+			if (!IsIPv4Address(group))
+				return false;
+			count += 2;
+		}
+		else
+		{
+			if (group.size() > 4 || !ContainsOnly(group, HEX))
+				return false;
+			++count;
+		}
+	}
+	return true;
+}
+
+static bool IsIPv6Address(const std::string& address)
+{
+	const std::string::size_type compression = address.find("::");
+	std::size_t groups = 0;
+	if (compression == std::string::npos)
+		return CountIPv6Groups(address, true, groups) && groups == 8;
+	return CountIPv6Groups(address.substr(0, compression), false, groups) &&
+		CountIPv6Groups(address.substr(compression + 2), true, groups) && groups < 8;
+}
+
 static bool IsNumericDotted(const std::string& host)
 {
-	if (host.find('.') == std::string::npos)
-		return (false);
-	for (std::string::size_type i = 0; i < host.size(); ++i)
-	{
-		if ((host[i] < '0' || host[i] > '9') && host[i] != '.')
-			return (false);
-	}
-	return (true);
+	return (host.find('.') != std::string::npos && ContainsOnly(host, NUMBER "."));
 }
 
 static bool IsDNSName(const std::string& host)
@@ -53,7 +79,7 @@ static bool IsDNSName(const std::string& host)
 		it != labels.end(); ++it)
 	{
 		if (it->empty() || it->size() > 63 ||
-			!StringPermition(*it, ALNUM "-") ||
+			!ContainsOnly(*it, ALNUM "-") ||
 			it->at(0) == '-' || it->at(it->size() - 1) == '-')
 			return (false);
 	}
@@ -65,15 +91,13 @@ HostType HttpRequestsParser::ParseHost(const std::string& authority) const
 	if (authority.empty())
 		throw RequestHeaderException();
 
-	std::string host;
 	if (authority[0] == '[')
 	{
 		const std::string::size_type close = authority.find(']');
 		if (close == std::string::npos || close == 1)
 			throw RequestHeaderException();
 		const std::string address = authority.substr(1, close - 1);
-		struct in6_addr ipv6;
-		if (inet_pton(AF_INET6, address.c_str(), &ipv6) != 1)
+		if (!IsIPv6Address(address))
 			throw RequestHeaderException();
 		const std::string suffix = authority.substr(close + 1);
 		if (!suffix.empty() &&
@@ -88,10 +112,8 @@ HostType HttpRequestsParser::ParseHost(const std::string& authority) const
 		if (authority.find(':', colon + 1) != std::string::npos ||
 			!IsPortValid(authority.substr(colon + 1)))
 			throw RequestHeaderException();
-		host = authority.substr(0, colon);
 	}
-	else
-		host = authority;
+	const std::string host = authority.substr(0, colon);
 
 	if (IsNumericDotted(host))
 	{
@@ -106,8 +128,8 @@ HostType HttpRequestsParser::ParseHost(const std::string& authority) const
 
 void HttpRequestsParser::ParseHostValue(const std::string& value)
 {
-	if (!_httprequests.host.empty())
+	if (!_request.host.empty())
 		throw RequestHeaderException();
-	_httprequests.hostType = ParseHost(value);
-	_httprequests.host = value;
+	_request.hostType = ParseHost(value);
+	_request.host = value;
 }

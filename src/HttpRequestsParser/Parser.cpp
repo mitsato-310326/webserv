@@ -1,20 +1,44 @@
 #include "HttpRequestsParser.hpp"
 
-void	HttpRequestsParser::RequestsParser(const std::string& str)
+ParseResult HttpRequestsParser::RequestsParser(const std::string& str)
 {
+	if (_result.status == Complete || _result.status == ParseError)
+		return (_result);
 	_result.status = ParseLoad;
-	if (_result.nstatus == First)
+	try
 	{
-		ParseFirstLine(str);
-		if (_result.status == ParseLoad)
-			_result.nstatus = Header;
+		switch (_phase)
+		{
+			case ReadRequestLine:
+			{
+				ParseRequestLine(str);
+				if (_result.status == NeedMoreData)
+					return (_result);
+				_phase = ReadHeaders;
+			}
+			case ReadHeaders:
+			{
+				ParseHeader(str);
+				if (_result.status == NeedMoreData)
+					return (_result);
+				_phase = ReadBody;
+			}
+			case ReadBody:
+			{
+				ParseRequestBody(str);
+				if (_result.status != ParseLoad)
+					return (_result);
+				_result.status = Complete;
+				_result.consumed = _cursor;
+				break;
+			}
+		}
+		return (_result);
 	}
-	if (_result.nstatus == Header)
+	catch (const RequestParseException& error)
 	{
-		ParseHeader(str);
-		if (_result.status == ParseLoad)
-		_result.nstatus = Body;	
+		_result.status = ParseError;
+		_result.errorReason = error.Reason();
+		return (_result);
 	}
-	if (_result.nstatus == Body)
-		ParseRequestBody(str);
 }

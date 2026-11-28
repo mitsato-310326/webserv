@@ -20,7 +20,7 @@ public:
   ~client();
   void appendData(const char *data, size_t len);
   ssize_t sendPending(int fd);
-  bool isSendFinshed() const;
+  bool isSendFinished() const;
 };
 
 #endif

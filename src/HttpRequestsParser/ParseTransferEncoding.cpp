@@ -23,10 +23,10 @@ void HttpRequestsParser::ParseTransferEncodingValue(const std::string& value)
 		if (tokens.size() != 1)
 			throw RequestHeaderException();
 		const TransferEncoding coding = ParseTransferCoding(tokens[0]);
-		if (coding == CHUNKED && _httprequests.chunked)
+		if (coding == CHUNKED && _request.chunked)
 			throw RequestHeaderException();
-		_httprequests.transferEncoding.push_back(coding);
+		_request.transferEncoding.push_back(coding);
 		if (coding == CHUNKED)
-			_httprequests.chunked = true;
+			_request.chunked = true;
 	}
 }

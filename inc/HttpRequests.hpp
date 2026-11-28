@@ -5,7 +5,9 @@
 # include <vector>
 # define MAXLINEBYTES 8192
 # define MAXCONTENTLENGTH 1024 * 1024
-# define UNDIFINED (-1)
+# define UNDEFINED (-1)
+# define CLEF "\r\n"
+# define HEADERSEND CLEF
 # define HOST "HOST"
 # define CONTENTLENGTH "CONTENT-LENGTH"
 # define TRANSFERENCODING "TRANSFER-ENCODING"
@@ -40,23 +42,27 @@ enum ParseStatus {
 	ParseError
 };
 
-enum NeedMoreDataStatus {
-	First,
-	Header,
-	Body
-};
-
 enum ChunkParseStatus {
 	ChunkNotStarted,
 	ChunkBytesRemain,
 	ChunkEnterRemain,
-	ChunkBlockRemain
+	ChunkBlockRemain,
+	ChunkTrailerRemain,
+	ChunkComplete
+};
+
+enum ParseErrorReason {
+	NoParseError,
+	InvalidSyntax,
+	LineTooLong,
+	BodyTooLarge,
+	UnsupportedTransferEncoding
 };
 
 struct ParseResult {
     ParseStatus status;
-	NeedMoreDataStatus nstatus;
     std::size_t consumed;  // Complete のとき、先頭の1リクエストが占めたバイト数
+    ParseErrorReason errorReason;  // ParseError の理由。成功・受信待ちは NoParseError
 };
 
 struct HttpRequests
@@ -65,8 +71,8 @@ struct HttpRequests
 	unsigned int            		versionMajor;
 	unsigned int            		versionMinor;
 	std::string             		target;   // 分割・デコード前の要求先
-	std::string             		path;     // クエリを分離した、デコード前のパス
-	std::string            			query;    // '?' を除いた、デコード前のクエリ
+	std::string             		path;     // クエリを分離した、パーセントデコード済みのパス
+	std::string            			query;    // '?' を除いた、パーセントデコード済みのクエリ
 	std::vector<HttpHeader> 		headers;  // Host・Content-Length・Transfer-Encodingなど。重複も保持
 	std::string             		body;     // chunkedの場合はデコード後。NULも含めて保持
 
@@ -83,7 +89,7 @@ struct HttpRequests
 	std::string::size_type			chunkBytes;
 
 	HttpRequests() : versionMajor(0), versionMinor(0),
-		hostType(HOST_TYPE_UNKNOWN), contentLength(UNDIFINED), chunked(false) {}
+		hostType(HOST_TYPE_UNKNOWN), contentLength(UNDEFINED), chunked(false) {}
 };
 
 #endif
